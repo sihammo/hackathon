@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { router, Redirect } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { ActionButton, AppText, DemoBanner, FormError, Input, LoadingScreen, WilayaPicker } from '@/components/AppUI';
 import { useApp } from '@/lib/app-context';
@@ -14,6 +14,8 @@ export default function AuthScreen() {
   const [creating, setCreating] = useState(false);
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [wilaya, setWilaya] = useState('Alger');
   const [error, setError] = useState('');
@@ -25,11 +27,16 @@ export default function AuthScreen() {
 
   const enterDemo = (role: 'user' | 'admin') => {
     setError('');
+    if (password.length < 8) {
+      setError(t(data.language, 'passwordTooShort'));
+      return;
+    }
     const allowed = startDemo(role, username);
     if (!allowed) {
       setError('Ce profil de démonstration est désactivé par l’administrateur local.');
       return;
     }
+    setPassword('');
     router.replace(role === 'admin' ? '/admin' : '/(tabs)');
   };
 
@@ -38,10 +45,20 @@ export default function AuthScreen() {
     const cleanUsername = username.trim();
     const cleanPhone = phone.trim();
     if (cleanName.length < 2 || cleanUsername.length < 3 || cleanPhone.replace(/\D/g, '').length < 8) {
-      setError('Ajoutez un nom, un identifiant de 3 caractères et un numéro valide.');
+      setError(t(data.language, 'profileDetailsRequired'));
+      return;
+    }
+    if (password.length < 8) {
+      setError(t(data.language, 'passwordTooShort'));
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError(t(data.language, 'passwordMismatch'));
       return;
     }
     createProfile({ fullName: cleanName, username: cleanUsername, phone: cleanPhone, wilaya });
+    setPassword('');
+    setConfirmPassword('');
     router.replace('/(tabs)');
   };
 
@@ -99,6 +116,7 @@ export default function AuthScreen() {
       ) : null}
 
       {creating ? (
+        <AuthForm onSubmit={submitProfile}>
         <View style={{ gap: 14 }}>
           <View style={styles.sectionHeading}>
             <View style={[styles.headingIcon, { backgroundColor: colors.accent }]}>
@@ -115,16 +133,36 @@ export default function AuthScreen() {
           </View>
           <Input label={t(data.language, 'name')} value={fullName} onChangeText={setFullName} autoCapitalize="words" testID="signup-name" />
           <Input label={t(data.language, 'username')} value={username} onChangeText={setUsername} autoCapitalize="none" testID="signup-username" />
+          <Input
+            label={t(data.language, 'password')}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+            textContentType="newPassword"
+            testID="signup-password"
+          />
+          <Input
+            label={t(data.language, 'confirmPassword')}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            autoCapitalize="none"
+            textContentType="newPassword"
+            testID="signup-confirm-password"
+          />
           <Input label={t(data.language, 'phone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" testID="signup-phone" />
           <WilayaPicker label={t(data.language, 'wilaya')} value={wilaya} onSelect={setWilaya} />
           <AppText style={{ color: colors.warning, fontSize: 12, lineHeight: 17 }}>
-            Le mot de passe et Firebase seront ajoutés avec votre projet. Aucun mot de passe n’est demandé ni stocké dans cette démo.
+            {t(data.language, 'passwordDemoNote')}
           </AppText>
           {error ? <FormError>{error}</FormError> : null}
           <ActionButton label={t(data.language, 'save')} icon="check" onPress={submitProfile} testID="create-profile" />
           <ActionButton label={t(data.language, 'cancel')} variant="outline" onPress={() => setCreating(false)} />
         </View>
+        </AuthForm>
       ) : (
+        <AuthForm onSubmit={() => enterDemo('user')}>
         <View style={{ gap: 14 }}>
           <Input
             label={t(data.language, 'username')}
@@ -133,6 +171,15 @@ export default function AuthScreen() {
             placeholder="ex. samira.b"
             autoCapitalize="none"
             testID="login-username"
+          />
+          <Input
+            label={t(data.language, 'password')}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+            textContentType="password"
+            testID="login-password"
           />
           {error ? <FormError>{error}</FormError> : null}
           <ActionButton
@@ -163,13 +210,37 @@ export default function AuthScreen() {
           <View style={[styles.note, { borderColor: colors.border, backgroundColor: colors.card }]}>
             <Feather name="info" size={16} color={colors.primary} />
             <AppText style={{ color: colors.mutedForeground, flex: 1, fontSize: 12, lineHeight: 17 }}>
-              Connexion de démonstration uniquement. Les profils et réglages restent sur cet appareil; les rôles Firebase ne sont pas encore vérifiés.
+              {t(data.language, 'authDemoNote')}
             </AppText>
           </View>
         </View>
+        </AuthForm>
       )}
     </KeyboardAwareScrollViewCompat>
   );
+}
+
+function AuthForm({
+  children,
+  onSubmit,
+}: {
+  children: React.ReactNode;
+  onSubmit: () => void;
+}) {
+  if (Platform.OS === 'web') {
+    return React.createElement(
+      'form',
+      {
+        autoComplete: 'off',
+        onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
+          event.preventDefault();
+          onSubmit();
+        },
+      },
+      children,
+    );
+  }
+  return <View>{children}</View>;
 }
 
 const styles = StyleSheet.create({
