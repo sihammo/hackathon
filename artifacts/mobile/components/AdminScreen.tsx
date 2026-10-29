@@ -36,6 +36,21 @@ export default function AdminScreen() {
   const [editingNumberId, setEditingNumberId] = useState<string | undefined>();
   const [formError, setFormError] = useState('');
 
+  const alertBars = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, index) => {
+        const day = new Date();
+        day.setDate(day.getDate() - (6 - index));
+        return {
+          label: day.toLocaleDateString('fr-FR', { weekday: 'narrow' }),
+          count: data.alerts.filter(
+            (alert) => new Date(alert.createdAt).toDateString() === day.toDateString(),
+          ).length,
+        };
+      }),
+    [data.alerts],
+  );
+
   if (!data.profile || data.role !== 'admin') return <Redirect href="/" />;
 
   const now = Date.now();
@@ -103,20 +118,6 @@ export default function AdminScreen() {
         civilProtection: averageArrivalMinutes('civilProtection', alerts),
       };
     },
-  );
-  const alertBars = useMemo(
-    () =>
-      Array.from({ length: 7 }, (_, index) => {
-        const day = new Date();
-        day.setDate(day.getDate() - (6 - index));
-        return {
-          label: day.toLocaleDateString('fr-FR', { weekday: 'narrow' }),
-          count: data.alerts.filter(
-            (alert) => new Date(alert.createdAt).toDateString() === day.toDateString(),
-          ).length,
-        };
-      }),
-    [data.alerts],
   );
   const maxCount = Math.max(1, ...alertBars.map((bar) => bar.count));
   const carCount = data.alerts.filter((alert) => alert.vehicleType === 'car').length;
