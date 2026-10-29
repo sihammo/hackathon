@@ -14,46 +14,38 @@
 
 const colors = {
   light: {
-    // Legacy aliases (kept for backward compatibility)
-    text: '#0a0a0a',
-    tint: '#2f95dc',
-
-    // Core surfaces
-    background: '#ffffff',
-    foreground: '#0a0a0a',
-
-    // Cards / elevated surfaces
-    card: '#f9f9f9',
-    cardForeground: '#0a0a0a',
-
-    // Primary action color (buttons, links, active states)
-    primary: '#2f95dc',
-    primaryForeground: '#ffffff',
-
-    // Secondary / less-emphasis interactive surfaces
-    secondary: '#f0f0f0',
-    secondaryForeground: '#1a1a1a',
-
-    // Muted / subdued elements (dividers, timestamps, placeholders)
-    muted: '#f0f0f0',
-    mutedForeground: '#737373',
-
-    // Accent highlights (badges, selected items, focus rings)
-    accent: '#f0f0f0',
-    accentForeground: '#1a1a1a',
-
-    // Destructive actions (delete, error states)
-    destructive: '#ef4444',
-    destructiveForeground: '#ffffff',
-
-    // Borders and input outlines
-    border: '#e5e5e5',
-    input: '#e5e5e5',
+    text: '#142941',
+    tint: '#E36A45',
+    background: '#F3F6F8',
+    foreground: '#25384C',
+    card: '#FFFFFF',
+    cardForeground: '#142941',
+    primary: '#E36A45',
+    primaryForeground: '#FFFFFF',
+    secondary: '#EAF0F4',
+    secondaryForeground: '#2C4258',
+    muted: '#EDF2F5',
+    mutedForeground: '#788897',
+    accent: '#FFF0E9',
+    accentForeground: '#B84F2D',
+    destructive: '#C94033',
+    destructiveForeground: '#FFFFFF',
+    border: '#DCE5EB',
+    input: '#DCE5EB',
+    deepNavy: '#142941',
+    signal: '#E36A45',
+    success: '#27856E',
+    successSurface: '#E4F3ED',
+    warning: '#94641C',
+    warningSurface: '#FFF4DC',
+    dangerSurface: '#FCEAE5',
+    mapSurface: '#EAF0F3',
+    mapRoad: '#D2DDE3',
+    mapAccent: '#B8CCD4',
+    overlay: 'rgba(8, 22, 35, 0.48)',
   },
 
-  // Border radius (in px). Sync from the sibling web artifact's --radius
-  // CSS variable. This value applies to cards, buttons, inputs, and modals.
-  radius: 8,
+  radius: 14,
 };
 
 export default colors;
