@@ -314,7 +314,6 @@ class _HomeTabState extends State<HomeTab> {
                   ),
                 ),
               _deviceCard(context, ble),
-              _blackPointAlertBanner(context, locService, isArabic),
               _vehicleCard(context, user),
               _trikSureCard(context, isArabic),
               _dashboardMapCard(context, locService, db, isArabic),
@@ -972,140 +971,7 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  Widget _blackPointAlertBanner(BuildContext context, LocationService locService, bool isArabic) {
-    if (!locService.isNearBlackPoint) return const SizedBox.shrink();
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFEF2F2),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.redAccent, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.red.withValues(alpha: 0.25),
-            blurRadius: 14,
-            spreadRadius: 2,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.warning_rounded, color: Colors.white, size: 24),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isArabic ? '⚠️ تنبيه: اقتراب من منطقة حوادث سابقة' : '⚠️ ALERTE : POINT NOIR IMMINENT',
-                        style: const TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        isArabic ? 'نقطة سوداء (وقع فيها حادث سابقاً)' : 'Zone à risque élevé d\'accident',
-                        style: TextStyle(
-                          color: Colors.red.shade900,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Color(0xFFFECACA)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.info_outline, color: Colors.red, size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      isArabic
-                          ? 'أنت على بعد ${locService.distanceMeters.toInt()}م من موقع وقع فيه حادث سابقاً. خفف سرعتك وكن حذراً!'
-                          : 'Vous êtes à ${locService.distanceMeters.toInt()}m d\'un lieu où un accident a déjà eu lieu auparavant. Ralentissez immédiatement !',
-                      style: const TextStyle(
-                        color: Color(0xFF1E293B),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        height: 1.35,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    icon: const Icon(Icons.volume_up, size: 18),
-                    label: Text(
-                      isArabic ? 'استماع للتنبيه الصوتي' : 'Écouter l\'alerte vocale',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                    ),
-                    onPressed: () => locService.speakCurrentWarning(isArabic: isArabic),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  icon: const Icon(Icons.map, size: 18),
-                  label: Text(isArabic ? 'الخريطة' : 'Carte'),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => HotspotMapPage(title: context.tr('nav_map')),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _deviceCard(BuildContext context, BleService ble) {
     final connected = ble.link == DeviceLink.connected;
