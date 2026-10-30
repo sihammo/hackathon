@@ -12,5 +12,7 @@ services:
         value: production
       - key: PORT
         value: 10000
+      - key: DATABASE_URL
+        value: postgresql://postgres.taobdejnduuytijvflip:DendaneZaid30%40@aws-1-eu-west-3.pooler.supabase.com:6543/postgres
       - key: MONGODB_URI
         sync: false
