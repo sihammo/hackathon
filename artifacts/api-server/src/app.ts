@@ -52,11 +52,11 @@ const publicDir = candidates.find((dir) =>
 if (publicDir) {
   logger.info({ publicDir }, "Serving Slamtek Web frontend");
   app.use(express.static(publicDir));
-  app.get("*", (req, res, next) => {
-    if (req.path.startsWith("/api")) {
-      return next();
+  app.use((req, res, next) => {
+    if (req.method === "GET" && !req.path.startsWith("/api")) {
+      return res.sendFile(path.join(publicDir, "index.html"));
     }
-    res.sendFile(path.join(publicDir, "index.html"));
+    next();
   });
 } else {
   logger.warn(
