@@ -1,7 +1,7 @@
 services:
-  # 1. API Server Backend (Node.js Express)
+  # Unified Slamtek Service (Frontend Web + Backend API together in one single deploy)
   - type: web
-    name: slamtek-api
+    name: slamtek
     runtime: node
     plan: free
     region: frankfurt
@@ -12,16 +12,3 @@ services:
         value: production
       - key: PORT
         value: 10000
-
-  # 2. Slamtek Web Application (Flutter Frontend)
-  - type: web
-    name: slamtek-web
-    runtime: static
-    plan: free
-    region: frankfurt
-    buildCommand: echo "Slamtek Web Ready"
-    staticPublishPath: ./public
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
