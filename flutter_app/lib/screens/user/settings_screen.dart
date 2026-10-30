@@ -187,7 +187,7 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Center(
-            child: Text('SolveX Alert v${AppConstants.appVersion}',
+            child: Text('Slamtek v${AppConstants.appVersion}',
                 style: Theme.of(context).textTheme.bodySmall),
           ),
         ],

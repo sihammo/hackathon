@@ -24,7 +24,7 @@ class MockDb extends Db {
 
   static final AppUser demoAdmin = AppUser(
     uid: 'demo-admin-1',
-    fullName: 'Directeur SolveX',
+    fullName: 'Directeur Slamtek',
     username: 'admin',
     phone: '0550000000',
     wilayaCode: 16,
@@ -92,7 +92,7 @@ class MockDb extends Db {
       DeviceInfo(
         id: 'SOLVEX-A101',
         userId: 'demo-user-1',
-        name: 'SolveX ESP32-Box #101',
+        name: 'Slamtek ESP32-Box #101',
         vehicleType: VehicleType.car,
         connected: true,
         lastSeen: now,
@@ -144,7 +144,7 @@ class MockDb extends Db {
         DeviceInfo(
           id: 'SOLVEX-${b.$6 == VehicleType.car ? "A" : "M"}${102 + i}',
           userId: user.uid,
-          name: 'SolveX IoT Box #${102 + i}',
+          name: 'Slamtek IoT Box #${102 + i}',
           vehicleType: b.$6,
           connected: i % 4 != 0, // 75% online
           lastSeen: now.subtract(Duration(minutes: (i * 11) % 180)),

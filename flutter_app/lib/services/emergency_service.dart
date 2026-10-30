@@ -139,8 +139,8 @@ class EmergencyService {
   String buildMessage(AppUser user, PreparedAlert p, {required bool test}) {
     final veh = user.vehicleType == VehicleType.car ? 'Voiture / سيارة' : 'Moto / دراجة نارية';
     final b = StringBuffer();
-    if (test) b.writeln('[TEST - SolveX]');
-    b.writeln('SolveX Alert: ACCIDENT détecté / حادث مرور');
+    if (test) b.writeln('[TEST - Slamtek]');
+    b.writeln('Slamtek سلامتك: ACCIDENT détecté / حادث مرور');
     b.writeln('Nom: ${user.fullName}');
     b.writeln('Tel: ${user.phone}');
     b.writeln('Vehicule: $veh');

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/constants.dart';
 import '../../core/l10n.dart';
@@ -33,21 +34,54 @@ class _HomeTabState extends State<HomeTab> {
   bool _detectDismissed = false;
   late final MapController _dashboardMapController = MapController();
   SafeDestination _selectedDestination = SafeRouteService.destinations.first;
+  List<LatLng>? _liveRouteFromUser;
+  bool _isLoadingRoute = false;
 
-  void _selectDestination(SafeDestination dest, bool isArabic) {
-    setState(() => _selectedDestination = dest);
+  void _selectDestination(SafeDestination dest, bool isArabic, [LatLng? userLoc]) {
+    setState(() {
+      _selectedDestination = dest;
+      if (userLoc != null) {
+        _liveRouteFromUser = [userLoc, ...dest.safeRoute.points];
+      }
+    });
+
     final target = dest.targetLocation;
     try {
-      _dashboardMapController.move(
-        LatLng((36.7510 + target.latitude) / 2, (3.0555 + target.longitude) / 2),
-        12.2,
-      );
+      final centerLat = userLoc != null ? (userLoc.latitude + target.latitude) / 2 : (36.7510 + target.latitude) / 2;
+      final centerLng = userLoc != null ? (userLoc.longitude + target.longitude) / 2 : (3.0555 + target.longitude) / 2;
+      _dashboardMapController.move(LatLng(centerLat, centerLng), 12.0);
     } catch (_) {}
+
     VoiceService.speakSafeRouteSelected(
       destination: isArabic ? dest.nameAr : dest.name,
       blackPointsAvoided: dest.safeRoute.blackPointsAvoided,
       isArabic: isArabic,
     );
+
+    if (userLoc != null) {
+      _fetchLiveRoadRoute(userLoc, target);
+    }
+  }
+
+  Future<void> _fetchLiveRoadRoute(LatLng userLoc, LatLng target) async {
+    if (_isLoadingRoute) return;
+    setState(() => _isLoadingRoute = true);
+    try {
+      final road = await SafeRouteService.fetchOsrmRoute(
+        start: userLoc,
+        destination: target,
+      );
+      if (mounted && road != null && road.isNotEmpty) {
+        setState(() {
+          _liveRouteFromUser = road;
+          _isLoadingRoute = false;
+        });
+      } else {
+        if (mounted) setState(() => _isLoadingRoute = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingRoute = false);
+    }
   }
 
   @override
@@ -56,6 +90,11 @@ class _HomeTabState extends State<HomeTab> {
     _checkPerms();
     _detectWilaya();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final loc = context.read<LocationService>().userLocation;
+        final userLoc = LatLng(loc.lat, loc.lng);
+        _fetchLiveRoadRoute(userLoc, _selectedDestination.targetLocation);
+      } catch (_) {}
       try {
         final hotspots = await context.read<Db>().allHotspots().first;
         if (mounted) {
@@ -274,8 +313,8 @@ class _HomeTabState extends State<HomeTab> {
                     ],
                   ),
                 ),
-              _blackPointAlertBanner(context, locService, isArabic),
               _deviceCard(context, ble),
+              _blackPointAlertBanner(context, locService, isArabic),
               _vehicleCard(context, user),
               _trikSureCard(context, isArabic),
               _dashboardMapCard(context, locService, db, isArabic),
@@ -381,8 +420,8 @@ class _HomeTabState extends State<HomeTab> {
                     const SizedBox(height: 4),
                     Text(
                       isArabic
-                          ? 'تطبيق SolveX يرسم لك مساراً يتفادى مناطق الحوادث المتكررة'
-                          : 'SolveX vous guide sur la route évitant les zones d\'accidents récurrents',
+                          ? 'تطبيق سلامتك يرسم لك مساراً يتفادى مناطق الحوادث المتكررة'
+                          : 'Slamtek vous guide sur la route évitant les zones d\'accidents récurrents',
                       style: const TextStyle(
                         color: Color(0xFFE2E8F0),
                         fontSize: 11.5,
@@ -532,15 +571,16 @@ class _HomeTabState extends State<HomeTab> {
     final dist = locService.distanceMeters.toInt();
     final userLoc = LatLng(locService.userLocation.lat, locService.userLocation.lng);
     final safe = _selectedDestination.safeRoute;
+    final routePoints = _liveRouteFromUser ?? [userLoc, ...safe.points];
 
     final polylines = [
       Polyline(
-        points: safe.points,
+        points: routePoints,
         strokeWidth: 9.0,
         color: const Color(0xFF10B981).withValues(alpha: 0.35),
       ),
       Polyline(
-        points: safe.points,
+        points: routePoints,
         strokeWidth: 5.0,
         color: const Color(0xFF10B981),
       ),
@@ -775,7 +815,7 @@ class _HomeTabState extends State<HomeTab> {
                                   color: _selectedDestination.id == d.id ? Colors.white : const Color(0xFF0F172A),
                                 ),
                                 onSelected: (sel) {
-                                  if (sel) _selectDestination(d, isArabic);
+                                  if (sel) _selectDestination(d, isArabic, userLoc);
                                 },
                               ),
                             ),
@@ -784,6 +824,38 @@ class _HomeTabState extends State<HomeTab> {
                       ),
                     ),
                   ],
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // Google Maps Free Direct Navigation Button
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0F172A),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 2,
+                  ),
+                  icon: const Icon(Icons.navigation_rounded, color: Color(0xFF10B981), size: 18),
+                  label: Text(
+                    isArabic
+                        ? 'توجيه مباشر في Google Maps (مجاني بدون قيود)'
+                        : 'Lancer l\'itinéraire Google Maps (Gratuit)',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                  onPressed: () async {
+                    final target = _selectedDestination.targetLocation;
+                    final url = Uri.parse(
+                      'https://www.google.com/maps/dir/?api=1&origin=${userLoc.latitude},${userLoc.longitude}&destination=${target.latitude},${target.longitude}&travelmode=driving',
+                    );
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                    }
+                  },
                 ),
               ),
 

@@ -72,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const AppLogo(size: 84),
                     const SizedBox(height: 12),
-                    Text('SolveX Alert',
+                    Text(context.tr('app_name'),
                         textAlign: TextAlign.center,
                         style: theme.textTheme.headlineMedium
                             ?.copyWith(fontWeight: FontWeight.bold)),
@@ -161,7 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         foregroundColor: theme.colorScheme.onTertiaryContainer,
                       ),
                       icon: const Icon(Icons.admin_panel_settings, size: 20),
-                      label: const Text('Démo : Administrateur SolveX'),
+                      label: const Text('Démo : Administrateur Slamtek'),
                       onPressed: _busy
                           ? null
                           : () {

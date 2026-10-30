@@ -84,7 +84,7 @@ class _PhoneFrameWrapperState extends State<PhoneFrameWrapper> {
                   const Icon(Icons.phone_android, color: Colors.redAccent, size: 20),
                   const SizedBox(width: 10),
                   const Text(
-                    'SolveX Alert — Rendu Mobile',
+                    'Slamtek — Rendu Mobile',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

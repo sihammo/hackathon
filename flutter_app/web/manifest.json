@@ -1,6 +1,6 @@
 {
-    "name": "solvex_alert",
-    "short_name": "solvex_alert",
+    "name": "Slamtek",
+    "short_name": "Slamtek",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

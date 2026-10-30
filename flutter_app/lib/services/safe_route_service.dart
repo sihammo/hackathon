@@ -3180,7 +3180,7 @@ class SafeRouteService {
         color: const Color(0xFF10B981),
         points: safePoints,
         explanation: 'Itinéraire 100% terrestre sur voies rapides sécurisées contournant tous les points noirs et zones accidentogènes.',
-        highlights: '0 point noir • 100% sur route terrestre • Voies recommandées par SolveX',
+        highlights: '0 point noir • 100% sur route terrestre • Voies recommandées par Slamtek',
       ),
       riskyRoute: SafeRoute(
         id: 'risky-custom',

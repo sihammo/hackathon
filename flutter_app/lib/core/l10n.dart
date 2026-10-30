@@ -36,6 +36,7 @@ class AppStrings {
 
   static const Map<String, String> _fr = {
     // General
+    'app_name': 'Slamtek',
     'app_tagline': "Alerte automatique en cas d'accident de la route",
     'hello': 'Bonjour',
     'cancel': 'Annuler',
@@ -88,7 +89,7 @@ class AppStrings {
     'nav_settings': 'Paramètres',
 
     // Home / device
-    'device': 'Boîtier SolveX',
+    'device': 'Boîtier Slamtek',
     'connected': 'Connecté',
     'connecting': 'Connexion…',
     'disconnected': 'Déconnecté',
@@ -105,13 +106,13 @@ class AppStrings {
     'forget_device': 'Oublier le boîtier',
     'forget_device_confirm': 'Dissocier ce boîtier du téléphone ?',
     'bluetooth_off': 'Activez le Bluetooth pour rechercher le boîtier',
-    'scan_hint': 'Allumez le boîtier SolveX et gardez le téléphone à proximité.',
+    'scan_hint': 'Allumez le boîtier Slamtek et gardez le téléphone à proximité.',
     'scan_again': 'Rechercher à nouveau',
-    'no_device_found': 'Aucun boîtier SolveX trouvé pour le moment',
+    'no_device_found': 'Aucun boîtier Slamtek trouvé pour le moment',
     'connect': 'Connecter',
     'permissions_needed': 'Autorisations nécessaires',
     'permissions_desc':
-        "SolveX Alert a besoin du Bluetooth, de la localisation, des SMS et des appels pour prévenir les secours.",
+        "Slamtek a besoin du Bluetooth, de la localisation, des SMS et des appels pour prévenir les secours.",
     'grant_permissions': 'Autoriser',
 
     // Vehicle
@@ -278,6 +279,7 @@ class AppStrings {
 
   static const Map<String, String> _ar = {
     // General
+    'app_name': 'سلامتك',
     'app_tagline': 'تنبيه تلقائي عند وقوع حادث مرور',
     'hello': 'مرحبا',
     'cancel': 'إلغاء',
@@ -330,7 +332,7 @@ class AppStrings {
     'nav_settings': 'الإعدادات',
 
     // Home / device
-    'device': 'جهاز SolveX',
+    'device': 'جهاز سلامتك',
     'connected': 'متصل',
     'connecting': 'جار الاتصال…',
     'disconnected': 'غير متصل',
@@ -347,13 +349,13 @@ class AppStrings {
     'forget_device': 'إلغاء ربط الجهاز',
     'forget_device_confirm': 'إلغاء ربط هذا الجهاز بالهاتف؟',
     'bluetooth_off': 'شغّل البلوتوث للبحث عن الجهاز',
-    'scan_hint': 'شغّل جهاز SolveX وأبق الهاتف قريبا منه.',
+    'scan_hint': 'شغّل جهاز سلامتك وأبق الهاتف قريبا منه.',
     'scan_again': 'إعادة البحث',
-    'no_device_found': 'لم يتم العثور على أي جهاز SolveX حاليا',
+    'no_device_found': 'لم يتم العثور على أي جهاز سلامتك حاليا',
     'connect': 'اتصال',
     'permissions_needed': 'الأذونات المطلوبة',
     'permissions_desc':
-        'يحتاج SolveX Alert إلى البلوتوث والموقع والرسائل القصيرة والمكالمات لتنبيه فرق الإسعاف.',
+        'يحتاج سلامتك إلى البلوتوث والموقع والرسائل القصيرة والمكالمات لتنبيه فرق الإسعاف.',
     'grant_permissions': 'السماح',
 
     // Vehicle

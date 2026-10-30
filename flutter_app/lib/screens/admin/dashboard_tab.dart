@@ -256,7 +256,7 @@ class _DashboardTabState extends State<DashboardTab> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      isArabic ? 'شبكة SolveX المباشرة' : 'PARC SOLVEX EN DIRECT',
+                      isArabic ? 'شبكة سلامتك المباشرة' : 'PARC SLAMTEK EN DIRECT',
                       style: const TextStyle(
                         color: Color(0xFF34D399),
                         fontSize: 10,
@@ -339,8 +339,8 @@ class _DashboardTabState extends State<DashboardTab> {
           const SizedBox(height: 6),
           Text(
             isArabic
-                ? 'عدد المستخدمين الذين اشتروا واستعملوا جهاز إنذار الحوادث SolveX Alert'
-                : 'Utilisateurs ayant acheté et installé le boîtier SolveX Alert sur leur véhicule.',
+                ? 'عدد المستخدمين الذين اشتروا واستعملوا جهاز إنذار الحوادث سلامتك'
+                : 'Utilisateurs ayant acheté et installé le boîtier Slamtek sur leur véhicule.',
             style: const TextStyle(
               color: Color(0xFFCBD5E1),
               fontSize: 12,
@@ -490,7 +490,7 @@ class _DashboardTabState extends State<DashboardTab> {
     final sales = [340, 780, 1350, 1980, 2450, 2840];
 
     return SectionCard(
-      title: isArabic ? 'نمو مبيعات الجهاز والمستخدمين' : 'Croissance des Ventes du Boîtier SolveX',
+      title: isArabic ? 'نمو مبيعات الجهاز والمستخدمين' : 'Croissance des Ventes du Boîtier Slamtek',
       icon: Icons.auto_graph,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -791,7 +791,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isArabic ? 'الحصيلة الإيجابية لحماية الأرواح' : 'IMPACT SÉCURITÉ ROUTIÈRE SOLVEX',
+                      isArabic ? 'الحصيلة الإيجابية لحماية الأرواح' : 'IMPACT SÉCURITÉ ROUTIÈRE SLAMTEK',
                       style: const TextStyle(
                         color: Colors.red,
                         fontWeight: FontWeight.bold,

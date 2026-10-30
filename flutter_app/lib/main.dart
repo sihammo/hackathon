@@ -50,19 +50,19 @@ Future<void> main() async {
         ChangeNotifierProvider<SessionController>.value(value: session),
         ChangeNotifierProvider<BleService>.value(value: ble),
       ],
-      child: const SolveXApp(),
+      child: const SlamtekApp(),
     ),
   );
 }
 
-class SolveXApp extends StatelessWidget {
-  const SolveXApp({super.key});
+class SlamtekApp extends StatelessWidget {
+  const SlamtekApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     final lc = context.watch<LocaleController>();
     return MaterialApp(
-      title: 'SolveX Alert',
+      title: 'Slamtek',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
       locale: lc.locale,

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/constants.dart';
 import '../../core/l10n.dart';
@@ -294,8 +295,8 @@ class _HotspotMapPageState extends State<HotspotMapPage> {
     final isAr = context.read<LocaleController>().lang == 'ar';
     VoiceService.speak(
       isAr
-          ? 'تم تفعيل إرشاد SolveX التفاعلي. أنت تسير الآن على مسار تريك سورة الآمن الذي يتفادى مناطق الحوادث.'
-          : 'Guidage SolveX activé. Vous roulez sur l\'itinéraire Trik Sûre évitant toutes les zones d\'accidents.',
+          ? 'تم تفعيل إرشاد سلامتك التفاعلي. أنت تسير الآن على مسار تريك سورة الآمن الذي يتفادى مناطق الحوادث.'
+          : 'Guidage Slamtek activé. Vous roulez sur l\'itinéraire Trik Sûre évitant toutes les zones d\'accidents.',
       lang: isAr ? 'ar-SA' : 'fr-FR',
     );
 
@@ -818,6 +819,8 @@ class _HotspotMapPageState extends State<HotspotMapPage> {
     final dest = _activeDestination!;
     final safe = dest.safeRoute;
     final risky = dest.riskyRoute;
+    final loc = context.read<LocationService>().userLocation;
+    final userLoc = LatLng(loc.lat, loc.lng);
 
     return Card(
       elevation: 10,
@@ -856,7 +859,7 @@ class _HotspotMapPageState extends State<HotspotMapPage> {
                       ),
                       Text(
                         isArabic
-                            ? 'مقارنة مسار الحوادث مع مسار SolveX الآمن'
+                            ? 'مقارنة مسار الحوادث مع مسار سلامتك الآمن'
                             : 'Comparatif : Route à Risques vs Trik Sûre',
                         style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                       ),
@@ -955,7 +958,7 @@ class _HotspotMapPageState extends State<HotspotMapPage> {
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                isArabic ? 'تريك سورة (آمن)' : 'Trik Sûre SolveX',
+                                isArabic ? 'تريك سورة (آمن)' : 'Trik Sûre Slamtek',
                                 style: const TextStyle(
                                   color: Color(0xFF047857),
                                   fontSize: 11,
@@ -1018,6 +1021,24 @@ class _HotspotMapPageState extends State<HotspotMapPage> {
                     ),
                     onPressed: _startNavigation,
                   ),
+                ),
+
+                const SizedBox(width: 8),
+
+                // Open in Google Maps (Free direct navigation)
+                IconButton.filled(
+                  style: IconButton.styleFrom(backgroundColor: const Color(0xFF10B981)),
+                  tooltip: isArabic ? 'فتح في Google Maps' : 'Ouvrir dans Google Maps',
+                  icon: const Icon(Icons.navigation_rounded, color: Colors.white),
+                  onPressed: () async {
+                    final target = dest.targetLocation;
+                    final url = Uri.parse(
+                      'https://www.google.com/maps/dir/?api=1&origin=${userLoc.latitude},${userLoc.longitude}&destination=${target.latitude},${target.longitude}&travelmode=driving',
+                    );
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                    }
+                  },
                 ),
 
                 const SizedBox(width: 8),
@@ -1097,7 +1118,7 @@ class _HotspotMapPageState extends State<HotspotMapPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isArabic ? 'إرشاد SolveX التفاعلي نشط' : 'Guidage Sécurisé SolveX Actif',
+                        isArabic ? 'إرشاد سلامتك التفاعلي نشط' : 'Guidage Sécurisé Slamtek Actif',
                         style: const TextStyle(
                           color: Color(0xFFA7F3D0),
                           fontSize: 11,
