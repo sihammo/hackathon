@@ -197,7 +197,7 @@ class _PhoneFrameWrapperState extends State<PhoneFrameWrapper> {
                                     const Text(
                                       '09:41',
                                       style: TextStyle(
-                                        color: Color(0xFF1E293B),
+                                        color: Colors.white,
                                         fontSize: 13,
                                         fontWeight: FontWeight.bold,
                                         letterSpacing: -0.2,
@@ -206,21 +206,21 @@ class _PhoneFrameWrapperState extends State<PhoneFrameWrapper> {
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(Icons.signal_cellular_4_bar, size: 14, color: Color(0xFF1E293B)),
+                                        const Icon(Icons.signal_cellular_4_bar, size: 14, color: Colors.white),
                                         const SizedBox(width: 4),
-                                        const Icon(Icons.wifi, size: 14, color: Color(0xFF1E293B)),
+                                        const Icon(Icons.wifi, size: 14, color: Colors.white),
                                         const SizedBox(width: 5),
                                         Container(
                                           width: 20,
                                           height: 10,
                                           decoration: BoxDecoration(
-                                            border: Border.all(color: const Color(0xFF1E293B), width: 1.2),
+                                            border: Border.all(color: Colors.white, width: 1.2),
                                             borderRadius: BorderRadius.circular(2.5),
                                           ),
                                           padding: const EdgeInsets.all(1),
                                           child: Container(
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFF1E293B),
+                                              color: Colors.white,
                                               borderRadius: BorderRadius.circular(1),
                                             ),
                                           ),
