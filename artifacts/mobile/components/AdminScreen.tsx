@@ -279,13 +279,13 @@ export default function AdminScreen() {
         </ScrollView>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
           <View style={styles.row}>
-          {(['all', 'car', 'motorcycle'] as const).map((filter) => {
-            const active = alertFilter === filter;
-            const label = filter === 'all' ? t(data.language, 'all') : filter === 'car' ? t(data.language, 'car') : t(data.language, 'motorcycle');
-            return (
-              <FilterChip key={filter} label={label} active={active} onPress={() => setAlertFilter(filter)} />
-            );
-          })}
+            {(['all', 'car', 'motorcycle'] as const).map((filter) => {
+              const active = alertFilter === filter;
+              const label = filter === 'all' ? t(data.language, 'all') : filter === 'car' ? t(data.language, 'car') : t(data.language, 'motorcycle');
+              return (
+                <FilterChip key={filter} label={label} active={active} onPress={() => setAlertFilter(filter)} />
+              );
+            })}
           </View>
         </ScrollView>
         <View style={styles.row}>
