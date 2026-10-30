@@ -39,11 +39,18 @@ class AppLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Container(
+      child: Image.asset(
+        'assets/images/logo.png',
         width: size,
         height: size,
-        decoration: const BoxDecoration(color: AppColors.brand, shape: BoxShape.circle),
-        child: Icon(Icons.car_crash, color: Colors.white, size: size * 0.55),
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (_, __, ___) => Container(
+          width: size,
+          height: size,
+          decoration: const BoxDecoration(color: AppColors.brand, shape: BoxShape.circle),
+          child: Icon(Icons.shield_outlined, color: Colors.white, size: size * 0.55),
+        ),
       ),
     );
   }

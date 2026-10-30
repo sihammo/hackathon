@@ -42,7 +42,14 @@ class _AdminPanelState extends State<AdminPanel> {
     ];
     return Scaffold(
       appBar: AppBar(
-        title: Text(titles[_tab]),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset('assets/images/logo.png', width: 26, height: 26, fit: BoxFit.contain),
+            const SizedBox(width: 10),
+            Flexible(child: Text(titles[_tab], overflow: TextOverflow.ellipsis)),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: context.tr('nav_settings'),

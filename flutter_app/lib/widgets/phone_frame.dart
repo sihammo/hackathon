@@ -88,7 +88,7 @@ class _PhoneFrameWrapperState extends State<PhoneFrameWrapper> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.phone_android, color: Color(0xFF10B981), size: 20),
+                  Image.asset('assets/images/logo.png', width: 22, height: 22, fit: BoxFit.contain),
                   const SizedBox(width: 10),
                   const Text(
                     'Slamtek — Rendu Mobile',
