@@ -1,0 +1,89 @@
+rules_version = '2';
+
+// SolveX Alert — Firestore security rules.
+// Deploy: firebase deploy --only firestore:rules   (or paste into Firebase console > Firestore > Rules)
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function profile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasProfile() {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return hasProfile() && profile().role == 'admin';
+    }
+
+    // Signed-in user whose account is not disabled.
+    function isActive() {
+      return hasProfile() && profile().get('disabled', false) != true;
+    }
+
+    // ---------------------------------------------------------------- users
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+
+      // Self sign-up: role is always 'user' and the account starts enabled.
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.role == 'user'
+        && request.resource.data.disabled == false;
+
+      // Users edit their own profile but never their role / disabled flag / username.
+      allow update: if isAdmin()
+        || (request.auth.uid == uid && isActive()
+            && !request.resource.data.diff(resource.data).affectedKeys()
+                 .hasAny(['role', 'disabled', 'username', 'createdAt']));
+
+      allow delete: if false;
+    }
+
+    // ---------------------------------------------------------------- devices
+    match /devices/{deviceId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow write: if isAdmin() || (isActive() && request.resource.data.userId == request.auth.uid);
+    }
+
+    // ---------------------------------------------------------------- alerts
+    match /alerts/{alertId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isActive() && request.resource.data.userId == request.auth.uid;
+      // Status changes (Received → Dispatched → Arrived → Resolved) are admin-only.
+      allow update, delete: if isAdmin();
+    }
+
+    // Anonymous accident points for the public hotspot map (no user data).
+    match /hotspots/{id} {
+      allow read: if signedIn();
+      allow create: if isActive();
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------- contacts
+    match /emergencyContacts/{id} {
+      allow read, delete: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isActive() && request.resource.data.userId == request.auth.uid;
+      allow update: if isActive()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid;
+    }
+
+    // ---------------------------------------------------------------- reference data
+    match /wilayaNumbers/{code} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /config/{doc} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

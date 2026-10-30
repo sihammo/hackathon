@@ -53,3 +53,13 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+
+# Agents & IDE
+.agents/
+.claude/

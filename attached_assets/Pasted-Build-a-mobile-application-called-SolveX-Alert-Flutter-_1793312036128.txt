@@ -1,0 +1,63 @@
+Build a mobile application called "SolveX Alert" (Flutter + Firebase) for a road accident
+emergency system. The app connects via Bluetooth Low Energy (BLE) to an ESP32-based device
+installed on a car or motorcycle. The device detects accidents (impact/vibration with an
+MPU6050 sensor) and has GPS. When an accident is detected, the app alerts emergency services
+and the user's chosen contacts.
+
+=== 1. AUTHENTICATION ===
+- Login screen with Username and Password fields, a "Log in" button, and a
+  "Create my account" button.
+- If the user already has an account, they log in with their username and password.
+- If not, they tap "Create my account" and fill in: full name, username, password
+  (with confirmation), phone number, and wilaya (dropdown of the 58 Algerian wilayas).
+- Passwords must be stored securely (Firebase Authentication, never plain text).
+- Two roles: "user" and "admin". After login, users go to the User Home screen and
+  admins go to the Admin Panel. The admin logs in from the same login screen with
+  his own username and password.
+
+=== 2. USER FEATURES ===
+- Pair the device: scan for and connect to the ESP32 via BLE; show connection status
+  (connected / disconnected) clearly on the home screen.
+- Vehicle type: the user chooses "Car" or "Motorcycle". The app sends this setting to
+  the device so it uses the right detection thresholds (car: stronger impact threshold;
+  motorcycle: lower impact threshold + fall detection by tilt angle).
+- Wilaya: selected at sign-up, editable in settings, and auto-detected from GPS when
+  possible. The app looks up the police and civil protection numbers for that wilaya
+  from a table stored in the database.
+- Emergency contacts: the user can add, edit, and delete personal phone numbers
+  (family, friends) to notify in case of accident.
+- Accident flow: when the device sends an accident alert over BLE, the app shows a
+  full-screen alarm with a loud sound and a 15-second countdown with a large
+  "I'M OK – CANCEL" button. If not cancelled, the app sends an SMS with the GPS
+  location (Google Maps link) to the police and civil protection of the user's wilaya
+  and to all emergency contacts, then places a call (Android, CALL_PHONE permission).
+  Every alert is saved to the database with time, location, vehicle type, and status.
+- Map screen: shows accident locations as black points so users can see dangerous
+  zones (hotspots).
+- History screen: the user's past alerts and their status.
+- Language: Arabic and French.
+
+=== 3. ADMIN PANEL ===
+A dashboard accessible only to the admin account, showing:
+- Total number of registered users (and new users this week/month).
+- Number of devices registered/connected, split by car vs motorcycle.
+- Number of alerts received from devices (today, this week, this month, total),
+  with a chart over time and a breakdown by wilaya.
+- Response of the police and civil protection for each alert: a status for each
+  alert (Sent → Received → Team dispatched → Arrived → Resolved), the response time
+  (time between the alert and arrival), and the average response time per wilaya
+  and per service (police / civil protection).
+- A list of all alerts with filters (date, wilaya, vehicle type, status) and the
+  ability to open an alert and see its details on a map.
+- A map of all accidents (hotspots).
+- User management: view, search, and disable user accounts.
+- Management of the wilaya emergency numbers table (add/edit numbers per wilaya).
+
+=== 4. DATA (Firebase) ===
+Collections: users (with role), devices, alerts (userId, deviceId, time, lat/lng,
+wilaya, vehicleType, status, statusTimestamps), emergencyContacts, wilayaNumbers.
+
+=== 5. TESTING MODE ===
+Include a "Test mode" toggle (on by default) that replaces all police and civil
+protection numbers with a test phone number, so no real emergency service is ever
+called during development or demos.
