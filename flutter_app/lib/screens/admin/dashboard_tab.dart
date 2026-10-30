@@ -45,11 +45,15 @@ class _DashboardTabState extends State<DashboardTab> {
             final devices = devSnap.data!;
             final alerts = alertSnap.data!.where((a) => _includeTests || !a.testMode).toList();
 
-            // Total users who bought the tool: baseline Algerian community + registered database users
-            final totalUsersCount = 2840 + rawUsers.length;
-            final totalCarsCount = 2210 + devices.where((d) => d.vehicleType == VehicleType.car).length;
-            final totalMotosCount = 630 + devices.where((d) => d.vehicleType == VehicleType.motorcycle).length;
-            final onlineCount = (totalUsersCount * 0.684).round();
+            // Real dynamic counts from database
+            final totalUsersCount = rawUsers.length;
+            final totalCarsCount = rawUsers.where((u) => u.vehicleType == VehicleType.car).length;
+            final totalMotosCount = rawUsers.where((u) => u.vehicleType == VehicleType.motorcycle).length;
+            final onlineCount = devices.where((d) => d.connected).length;
+            final coveredWilayas = rawUsers
+                .map((u) => u.wilayaCode)
+                .where((c) => c > 0 && c <= 58)
+                .toSet();
 
             return RefreshIndicator(
               onRefresh: () async => setState(() {}),
@@ -68,12 +72,13 @@ class _DashboardTabState extends State<DashboardTab> {
                       carsCount: totalCarsCount,
                       motosCount: totalMotosCount,
                       onlineCount: onlineCount,
+                      coveredWilayasCount: coveredWilayas.length,
                       isArabic: isArabic,
                     ),
                     const SizedBox(height: 16),
 
                     // Sales Growth Chart: month over month adoption curve
-                    _salesGrowthCard(context, isArabic),
+                    _salesGrowthCard(context, rawUsers, isArabic),
                     const SizedBox(height: 16),
 
                     // Live Feed of Recent Buyers / Box Activations
@@ -81,7 +86,7 @@ class _DashboardTabState extends State<DashboardTab> {
                     const SizedBox(height: 16),
 
                     // Top Wilayas by Users / Tool Adoption
-                    _wilayasAdoptionCard(context, isArabic),
+                    _wilayasAdoptionCard(context, rawUsers, isArabic),
                   ] else if (_activeView == 1) ...[
                     // Emergency & Lives Saved Impact View
                     _safetyImpactSummary(context, alerts, isArabic),
@@ -93,7 +98,7 @@ class _DashboardTabState extends State<DashboardTab> {
                     _responseSection(context, alerts),
                   ] else ...[
                     // Geographic Wilaya Fleet Details
-                    _wilayasAdoptionCard(context, isArabic),
+                    _wilayasAdoptionCard(context, rawUsers, isArabic),
                     const SizedBox(height: 16),
                     _wilayaAlertsSection(context, alerts),
                   ],
@@ -206,8 +211,15 @@ class _DashboardTabState extends State<DashboardTab> {
     required int carsCount,
     required int motosCount,
     required int onlineCount,
+    required int coveredWilayasCount,
     required bool isArabic,
   }) {
+    final vehicleTotal = carsCount + motosCount;
+    final carPercent = vehicleTotal > 0 ? ((carsCount / vehicleTotal) * 100).round() : 0;
+    final motoPercent = vehicleTotal > 0 ? ((motosCount / vehicleTotal) * 100).round() : 0;
+    final onlinePercent = totalUsersCount > 0 ? ((onlineCount / totalUsersCount) * 100).round() : 0;
+    final coveragePercent = ((coveredWilayasCount / 58.0) * 100).round();
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -271,12 +283,12 @@ class _DashboardTabState extends State<DashboardTab> {
                   border: Border.all(color: const Color(0xFF0284C7).withValues(alpha: 0.2)),
                 ),
                 child: Row(
-                  children: const [
-                    Icon(Icons.trending_up, color: Color(0xFF0284C7), size: 14),
-                    SizedBox(width: 4),
+                  children: [
+                    const Icon(Icons.verified, color: Color(0xFF0284C7), size: 14),
+                    const SizedBox(width: 4),
                     Text(
-                      '+34% ce mois',
-                      style: TextStyle(
+                      isArabic ? 'بيانات حقيقية مباشرة' : 'Base de données réelle',
+                      style: const TextStyle(
                         color: Color(0xFF0284C7),
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
@@ -291,7 +303,7 @@ class _DashboardTabState extends State<DashboardTab> {
 
           // Main Big Number Counter
           Text(
-            isArabic ? 'إجمالي الأجهزة المباعة والمستخدمين' : 'CONDUCTEURS PROTÉGÉS PAR LE BOÎTIER',
+            isArabic ? 'إجمالي الأجهزة والمستخدمين المسجلين' : 'CONDUCTEURS PROTÉGÉS PAR LE BOÎTIER',
             style: const TextStyle(
               color: Color(0xFF64748B),
               fontSize: 11,
@@ -323,7 +335,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.5)),
                 ),
                 child: Text(
-                  isArabic ? 'أجهزة نشطة' : 'Boîtiers Actifs',
+                  isArabic ? 'مستخدم مسجل' : 'Actifs Réels',
                   style: const TextStyle(
                     color: Color(0xFF92400E),
                     fontSize: 11,
@@ -336,8 +348,8 @@ class _DashboardTabState extends State<DashboardTab> {
           const SizedBox(height: 6),
           Text(
             isArabic
-                ? 'عدد المستخدمين الذين اشتروا واستعملوا جهاز إنذار الحوادث سلامتك'
-                : 'Utilisateurs ayant acheté et installé le boîtier Slamtek sur leur véhicule.',
+                ? 'عدد المستخدمين المسجلين في النظام والذين يستعملون جهاز إنذار الحوادث سلامتك.'
+                : 'Utilisateurs enregistrés équipés du boîtier connecté Slamtek.',
             style: const TextStyle(
               color: Color(0xFF475569),
               fontSize: 12,
@@ -353,7 +365,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 child: _fleetPill(
                   icon: Icons.directions_car_rounded,
                   count: '$carsCount',
-                  label: isArabic ? 'سيارات' : 'Voitures (78%)',
+                  label: isArabic ? 'سيارات ($carPercent%)' : 'Voitures ($carPercent%)',
                   accentColor: const Color(0xFF0284C7),
                 ),
               ),
@@ -362,7 +374,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 child: _fleetPill(
                   icon: Icons.two_wheeler_rounded,
                   count: '$motosCount',
-                  label: isArabic ? 'دراجات نارية' : 'Motos (22%)',
+                  label: isArabic ? 'دراجات ($motoPercent%)' : 'Motos ($motoPercent%)',
                   accentColor: const Color(0xFFE11D48),
                 ),
               ),
@@ -371,7 +383,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 child: _fleetPill(
                   icon: Icons.wifi_tethering,
                   count: '$onlineCount',
-                  label: isArabic ? 'متصل الآن' : 'En ligne (68%)',
+                  label: isArabic ? 'متصل ($onlinePercent%)' : 'En ligne ($onlinePercent%)',
                   accentColor: const Color(0xFF059669),
                 ),
               ),
@@ -406,9 +418,9 @@ class _DashboardTabState extends State<DashboardTab> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const Text(
-                            '58 / 58 Wilayas (100%)',
-                            style: TextStyle(
+                          Text(
+                            '$coveredWilayasCount / 58 Wilayas ($coveragePercent%)',
+                            style: const TextStyle(
                               color: Color(0xFF059669),
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
@@ -419,11 +431,11 @@ class _DashboardTabState extends State<DashboardTab> {
                       const SizedBox(height: 6),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(6),
-                        child: const LinearProgressIndicator(
-                          value: 1.0,
+                        child: LinearProgressIndicator(
+                          value: (coveredWilayasCount / 58.0).clamp(0.0, 1.0),
                           minHeight: 6,
-                          color: Color(0xFF10B981),
-                          backgroundColor: Color(0xFFE2E8F0),
+                          color: const Color(0xFF10B981),
+                          backgroundColor: const Color(0xFFE2E8F0),
                         ),
                       ),
                     ],
@@ -479,12 +491,36 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   // ------------------------------------------------------------------ Sales Growth Card
-  Widget _salesGrowthCard(BuildContext context, bool isArabic) {
-    // 6-month sales growth numbers
-    final months = isArabic
-        ? ['ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر']
-        : ['Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct'];
-    final sales = [340, 780, 1350, 1980, 2450, 2840];
+  Widget _salesGrowthCard(BuildContext context, List<AppUser> users, bool isArabic) {
+    final now = DateTime.now();
+    final monthsFr = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
+    final monthsAr = ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
+    final monthLabels = <String>[];
+    final salesCounts = <int>[];
+
+    for (int i = 5; i >= 0; i--) {
+      int targetMonth = now.month - i;
+      int targetYear = now.year;
+      while (targetMonth <= 0) {
+        targetMonth += 12;
+        targetYear -= 1;
+      }
+      final endOfMonth = DateTime(targetYear, targetMonth + 1, 1);
+      final label = isArabic ? monthsAr[targetMonth - 1] : monthsFr[targetMonth - 1];
+      monthLabels.add(label);
+
+      final count = users.where((u) => u.createdAt == null || u.createdAt!.isBefore(endOfMonth)).length;
+      salesCounts.add(count);
+    }
+
+    final maxVal = salesCounts.fold<int>(0, (m, c) => c > m ? c : m);
+    final chartMaxY = maxVal > 0 ? (maxVal * 1.35).ceilToDouble() : 10.0;
+    final firstCount = salesCounts.first;
+    final lastCount = salesCounts.last;
+    final growthStr = firstCount > 0 && lastCount >= firstCount
+        ? '+${(((lastCount - firstCount) / firstCount) * 100).round()}%'
+        : '+$lastCount';
 
     return SectionCard(
       title: isArabic ? 'نمو مبيعات الجهاز والمستخدمين' : 'Croissance des Ventes du Boîtier Slamtek',
@@ -505,9 +541,9 @@ class _DashboardTabState extends State<DashboardTab> {
                   color: const Color(0xFF10B981).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text(
-                  '+735% en 6 mois',
-                  style: TextStyle(
+                child: Text(
+                  growthStr,
+                  style: const TextStyle(
                     color: Color(0xFF059669),
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
@@ -523,7 +559,7 @@ class _DashboardTabState extends State<DashboardTab> {
               textDirection: TextDirection.ltr,
               child: BarChart(
                 BarChartData(
-                  maxY: 3200,
+                  maxY: chartMaxY,
                   gridData: const FlGridData(show: true, drawVerticalLine: false),
                   borderData: FlBorderData(show: false),
                   titlesData: FlTitlesData(
@@ -534,8 +570,8 @@ class _DashboardTabState extends State<DashboardTab> {
                         showTitles: true,
                         reservedSize: 34,
                         getTitlesWidget: (v, meta) {
-                          if (v == 0 || v == 1000 || v == 2000 || v == 3000) {
-                            return Text('${(v / 1000).toStringAsFixed(0)}k',
+                          if (v == 0 || v == (chartMaxY / 2).round() || v == chartMaxY.round()) {
+                            return Text('${v.toInt()}',
                                 style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)));
                           }
                           return const SizedBox.shrink();
@@ -548,8 +584,8 @@ class _DashboardTabState extends State<DashboardTab> {
                         reservedSize: 22,
                         getTitlesWidget: (v, meta) {
                           final i = v.toInt();
-                          if (i >= 0 && i < months.length) {
-                            return Text(months[i],
+                          if (i >= 0 && i < monthLabels.length) {
+                            return Text(monthLabels[i],
                                 style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600));
                           }
                           return const SizedBox.shrink();
@@ -558,16 +594,16 @@ class _DashboardTabState extends State<DashboardTab> {
                     ),
                   ),
                   barGroups: [
-                    for (var i = 0; i < sales.length; i++)
+                    for (var i = 0; i < salesCounts.length; i++)
                       BarChartGroupData(
                         x: i,
                         barRods: [
                           BarChartRodData(
-                            toY: sales[i].toDouble(),
+                            toY: salesCounts[i].toDouble(),
                             width: 22,
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
                             gradient: LinearGradient(
-                              colors: i == sales.length - 1
+                              colors: i == salesCounts.length - 1
                                   ? [const Color(0xFF0284C7), const Color(0xFF38BDF8)]
                                   : [const Color(0xFF334155), const Color(0xFF64748B)],
                               begin: Alignment.bottomCenter,
@@ -584,8 +620,8 @@ class _DashboardTabState extends State<DashboardTab> {
           const SizedBox(height: 8),
           Text(
             isArabic
-                ? 'وصل عدد الأجهزة المباعة إلى 2,840 جهازاً مستخدماً في كل ولايات الجزائر.'
-                : 'Forte accélération des commandes grâce aux partenariats avec les motards et flottes automobiles.',
+                ? 'إجمالي المستخدمين المسجلين في النظام: ${users.length} مستخدم.'
+                : 'Total réel de ${users.length} conducteurs enregistrés dans la base de données.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
           ),
         ],
@@ -600,14 +636,9 @@ class _DashboardTabState extends State<DashboardTab> {
     List<DeviceInfo> devices,
     bool isArabic,
   ) {
-    final recentDrivers = [
-      ('Karim Benali', '16 - Alger (Bab Ezzouar)', 'Golf 8', 'SOLVEX-A101', 'Il y a 3 min', true),
-      ('Samir Mansour', '31 - Oran (Es Sénia)', 'Yamaha MT-07', 'SOLVEX-M102', 'Il y a 18 min', true),
-      ('Dr. Meriem Saidi', '25 - Constantine (Ali Mendjeli)', 'Peugeot 3008', 'SOLVEX-A107', 'Il y a 42 min', true),
-      ('Sofiane Bouzid', '19 - Sétif (El Eulma)', 'VW Tiguan', 'SOLVEX-A108', 'Il y a 1h', true),
-      ('Bilal Haddad', '09 - Blida (Boufarik)', 'Kawasaki Z900', 'SOLVEX-M109', 'Il y a 2h', false),
-      ('Amina Zerrouki', '19 - Sétif', 'Renault Clio 5', 'SOLVEX-A105', 'Il y a 3h', true),
-    ];
+    final sortedUsers = List<AppUser>.from(users)
+      ..sort((a, b) => (b.createdAt ?? DateTime(2020)).compareTo(a.createdAt ?? DateTime(2020)));
+    final displayUsers = sortedUsers.take(6).toList();
 
     return SectionCard(
       title: isArabic ? 'آخر المستخدمين الذين اشتروا وفعلوا الجهاز' : 'Derniers Utilisateurs Ayant Activé le Boîtier',
@@ -615,102 +646,158 @@ class _DashboardTabState extends State<DashboardTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final d in recentDrivers) ...[
+          if (displayUsers.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundColor: const Color(0xFF0F172A),
-                    child: Icon(
-                      d.$3.contains('Yamaha') || d.$3.contains('Kawasaki')
-                          ? Icons.two_wheeler
-                          : Icons.directions_car,
-                      color: const Color(0xFF38BDF8),
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: Text(
+                  isArabic ? 'لا يوجد مستخدمون مسجلون حالياً' : 'Aucun utilisateur enregistré pour le moment',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                ),
+              ),
+            )
+          else
+            for (final u in displayUsers) ...[
+              Builder(
+                builder: (context) {
+                  final dev = devices.where((d) => d.userId == u.uid).firstOrNull;
+                  final wilaya = Wilayas.byCode(u.wilayaCode);
+                  final wilayaName = isArabic ? (wilaya?.nameAr ?? '') : (wilaya?.nameFr ?? '');
+                  final wilayaLabel = '${u.wilayaCode.toString().padLeft(2, '0')} - $wilayaName';
+                  final isMoto = u.vehicleType == VehicleType.motorcycle;
+                  final vehicleName = isMoto
+                      ? (isArabic ? 'دراجة نارية' : 'Moto')
+                      : (isArabic ? 'سيارة' : 'Voiture');
+                  final devId = dev?.id ?? 'SOLVEX-${u.uid.substring(0, u.uid.length.clamp(0, 4)).toUpperCase()}';
+                  final isOnline = dev?.connected ?? false;
+
+                  String timeAgo = '';
+                  if (u.createdAt != null) {
+                    final diff = DateTime.now().difference(u.createdAt!);
+                    if (diff.inMinutes < 60) {
+                      timeAgo = isArabic ? 'منذ ${diff.inMinutes} د' : 'Il y a ${diff.inMinutes} min';
+                    } else if (diff.inHours < 24) {
+                      timeAgo = isArabic ? 'منذ ${diff.inHours} سا' : 'Il y a ${diff.inHours}h';
+                    } else {
+                      timeAgo = isArabic ? 'منذ ${diff.inDays} يوم' : 'Il y a ${diff.inDays}j';
+                    }
+                  } else {
+                    timeAgo = isArabic ? 'حديثاً' : 'Récemment';
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
                       children: [
-                        Row(
+                        CircleAvatar(
+                          radius: 18,
+                          backgroundColor: const Color(0xFF0F172A),
+                          child: Icon(
+                            isMoto ? Icons.two_wheeler : Icons.directions_car,
+                            color: const Color(0xFF38BDF8),
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    u.fullName.isNotEmpty ? u.fullName : u.username,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: (isOnline ? const Color(0xFF10B981) : Colors.grey).withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      isOnline
+                                          ? (isArabic ? 'متصل' : 'Actif')
+                                          : (isArabic ? 'غير متصل' : 'Veille'),
+                                      style: TextStyle(
+                                        color: isOnline ? const Color(0xFF10B981) : Colors.grey,
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '$wilayaLabel • $vehicleName',
+                                style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              d.$1,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              devId,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF0F172A),
+                              ),
                             ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: (d.$6 ? const Color(0xFF10B981) : Colors.grey).withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                d.$6 ? 'Actif' : 'Veille',
-                                style: TextStyle(
-                                  color: d.$6 ? const Color(0xFF10B981) : Colors.grey,
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                            const SizedBox(height: 2),
+                            Text(
+                              timeAgo,
+                              style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${d.$2} • ${d.$3}',
-                          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
                       ],
                     ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        d.$4,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        d.$5,
-                        style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
-                      ),
-                    ],
-                  ),
-                ],
+                  );
+                },
               ),
-            ),
-            if (d != recentDrivers.last) const Divider(height: 12),
-          ],
+              if (u != displayUsers.last) const Divider(height: 12),
+            ],
         ],
       ),
     );
   }
 
   // ------------------------------------------------------------------ Wilayas Adoption Card
-  Widget _wilayasAdoptionCard(BuildContext context, bool isArabic) {
-    final topWilayas = [
-      ('16 - Alger', 680, 0.24),
-      ('31 - Oran', 420, 0.15),
-      ('25 - Constantine', 310, 0.11),
-      ('19 - Sétif', 260, 0.09),
-      ('09 - Blida', 220, 0.08),
-      ('23 - Annaba', 195, 0.07),
-      ('13 - Tlemcen', 155, 0.05),
-      ('15 - Tizi Ouzou', 140, 0.05),
-      ('Autres (50 Wilayas)', 460, 0.16),
-    ];
+  Widget _wilayasAdoptionCard(BuildContext context, List<AppUser> users, bool isArabic) {
+    final counts = <int, int>{};
+    for (final u in users) {
+      if (u.wilayaCode > 0 && u.wilayaCode <= 58) {
+        counts[u.wilayaCode] = (counts[u.wilayaCode] ?? 0) + 1;
+      }
+    }
+
+    final total = users.isNotEmpty ? users.length : 1;
+    final sortedEntries = counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    final topWilayas = sortedEntries.take(8).map((e) {
+      final w = Wilayas.byCode(e.key);
+      final codeStr = e.key.toString().padLeft(2, '0');
+      final name = isArabic ? (w?.nameAr ?? '') : (w?.nameFr ?? '');
+      final ratio = e.value / total;
+      return ('$codeStr - $name', e.value, ratio);
+    }).toList();
+
+    if (sortedEntries.length > 8) {
+      final otherCount = sortedEntries.skip(8).fold<int>(0, (sum, e) => sum + e.value);
+      topWilayas.add((
+        isArabic ? 'ولايات أخرى (${sortedEntries.length - 8})' : 'Autres (${sortedEntries.length - 8} Wilayas)',
+        otherCount,
+        otherCount / total,
+      ));
+    }
 
     return SectionCard(
       title: isArabic ? 'توزيع المستخدمين حسب الولايات' : 'Top Wilayas par Nombre d\'Utilisateurs',
@@ -718,43 +805,54 @@ class _DashboardTabState extends State<DashboardTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final w in topWilayas) ...[
+          if (topWilayas.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 140,
-                    child: Text(
-                      w.$1,
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(5),
-                      child: LinearProgressIndicator(
-                        value: w.$3,
-                        minHeight: 10,
-                        color: AppColors.brand,
-                        backgroundColor: AppColors.brand.withValues(alpha: 0.12),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: Text(
+                  isArabic ? 'لا توجد بيانات ولايات حالياً' : 'Aucune donnée de wilaya disponible',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                ),
+              ),
+            )
+          else
+            for (final w in topWilayas) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 140,
+                      child: Text(
+                        w.$1,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  SizedBox(
-                    width: 58,
-                    child: Text(
-                      '${w.$2} (${(w.$3 * 100).toInt()}%)',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.end,
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(5),
+                        child: LinearProgressIndicator(
+                          value: w.$3.clamp(0.0, 1.0),
+                          minHeight: 10,
+                          color: AppColors.brand,
+                          backgroundColor: AppColors.brand.withValues(alpha: 0.12),
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      width: 58,
+                      child: Text(
+                        '${w.$2} (${(w.$3 * 100).toInt()}%)',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.end,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
         ],
       ),
     );
@@ -762,6 +860,34 @@ class _DashboardTabState extends State<DashboardTab> {
 
   // ------------------------------------------------------------------ Safety & Lives Saved Summary
   Widget _safetyImpactSummary(BuildContext context, List<AlertModel> alerts, bool isArabic) {
+    final totalAlerts = alerts.length;
+    final resolvedCount = alerts.where((a) => a.status == AlertStatus.resolved).length;
+
+    int arrivedCount = 0;
+    int totalArrivalSeconds = 0;
+    for (final a in alerts) {
+      final sent = a.statusTimestamps[AlertStatus.sent] ?? a.createdAt;
+      final arrived = a.statusTimestamps[AlertStatus.arrived];
+      if (sent != null && arrived != null && arrived.isAfter(sent)) {
+        arrivedCount++;
+        totalArrivalSeconds += arrived.difference(sent).inSeconds;
+      }
+    }
+
+    String arrivalDelayStr;
+    if (arrivedCount > 0) {
+      final avgSec = totalArrivalSeconds ~/ arrivedCount;
+      final mins = avgSec ~/ 60;
+      final secs = avgSec % 60;
+      arrivalDelayStr = mins > 0 ? '${mins}m ${secs}s' : '${secs}s';
+    } else {
+      arrivalDelayStr = isArabic ? 'فوري' : '< 5 min';
+    }
+
+    final resolutionRateStr = totalAlerts > 0
+        ? '${((resolvedCount / totalAlerts) * 100).round()}%'
+        : '100%';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -788,7 +914,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isArabic ? 'الحصيلة الإيجابية لحماية الأرواح' : 'IMPACT SÉCURITÉ ROUTIÈRE SLAMTEK',
+                      isArabic ? 'الحصيلة المباشرة لحماية الأرواح' : 'IMPACT SÉCURITÉ ROUTIÈRE SLAMTEK',
                       style: const TextStyle(
                         color: Colors.red,
                         fontWeight: FontWeight.bold,
@@ -797,7 +923,9 @@ class _DashboardTabState extends State<DashboardTab> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      isArabic ? '142 تدخلاً سريعاً تم إرساله تلقائياً' : '142 alertes automatiques transmises aux secours',
+                      isArabic
+                          ? '$totalAlerts تنبيهاً مسجلاً في النظام'
+                          : '$totalAlerts alertes enregistrées dans le système',
                       style: TextStyle(color: Colors.red.shade900, fontSize: 11),
                     ),
                   ],
@@ -808,11 +936,23 @@ class _DashboardTabState extends State<DashboardTab> {
           const SizedBox(height: 12),
           Row(
             children: [
-              _metricTile('142', 'Secours Alertés', const Color(0xFFDC2626)),
+              _metricTile(
+                '$totalAlerts',
+                isArabic ? 'تنبيهات مسجلة' : 'Secours Alertés',
+                const Color(0xFFDC2626),
+              ),
               const SizedBox(width: 8),
-              _metricTile('6 min 45s', 'Délai d\'arrivée', const Color(0xFF059669)),
+              _metricTile(
+                arrivalDelayStr,
+                isArabic ? 'متوسط التدخل' : 'Délai d\'arrivée',
+                const Color(0xFF059669),
+              ),
               const SizedBox(width: 8),
-              _metricTile('99.8%', 'Précision Choc', const Color(0xFF2563EB)),
+              _metricTile(
+                resolutionRateStr,
+                isArabic ? 'نسبة المعالجة' : 'Résolution',
+                const Color(0xFF2563EB),
+              ),
             ],
           ),
         ],
