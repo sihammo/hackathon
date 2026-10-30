@@ -103,26 +103,24 @@ class _DashboardTabState extends State<DashboardTab> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0F172A),
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.science_outlined, size: 18, color: Color(0xFF38BDF8)),
+                            const Icon(Icons.science_outlined, size: 18, color: Colors.blueGrey),
                             const SizedBox(width: 8),
                             Text(
                               context.tr('include_test_alerts'),
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                             ),
                           ],
                         ),
                         Switch(
                           value: _includeTests,
-                          activeColor: const Color(0xFF10B981),
                           onChanged: (v) => setState(() => _includeTests = v),
                         ),
                       ],
@@ -142,9 +140,8 @@ class _DashboardTabState extends State<DashboardTab> {
   Widget _viewSwitcher(BuildContext context, bool isArabic) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
+        color: const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       padding: const EdgeInsets.all(4),
       child: Row(
@@ -166,16 +163,13 @@ class _DashboardTabState extends State<DashboardTab> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: active ? const Color(0xFF1E293B) : Colors.transparent,
+            color: active ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
-            border: active
-                ? Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.4), width: 1)
-                : null,
             boxShadow: active
                 ? [
                     BoxShadow(
-                      color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
-                      blurRadius: 8,
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
                   ]
@@ -184,7 +178,7 @@ class _DashboardTabState extends State<DashboardTab> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 15, color: active ? const Color(0xFF38BDF8) : const Color(0xFF64748B)),
+              Icon(icon, size: 15, color: active ? AppColors.brand : Colors.blueGrey),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
@@ -192,7 +186,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: active ? FontWeight.bold : FontWeight.w500,
-                    color: active ? Colors.white : const Color(0xFF94A3B8),
+                    color: active ? const Color(0xFF0F172A) : const Color(0xFF64748B),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -216,21 +210,17 @@ class _DashboardTabState extends State<DashboardTab> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFF38BDF8).withValues(alpha: 0.35),
+          color: const Color(0xFFE2E8F0),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.45),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF0F172A).withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -245,9 +235,9 @@ class _DashboardTabState extends State<DashboardTab> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.18),
+                  color: const Color(0xFFECFDF5),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFF10B981), width: 1),
+                  border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4), width: 1),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -264,7 +254,7 @@ class _DashboardTabState extends State<DashboardTab> {
                     Text(
                       isArabic ? 'شبكة سلامتك المباشرة' : 'PARC SLAMTEK EN DIRECT',
                       style: const TextStyle(
-                        color: Color(0xFF34D399),
+                        color: Color(0xFF065F46),
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.4,
@@ -276,17 +266,18 @@ class _DashboardTabState extends State<DashboardTab> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                  color: const Color(0xFFF0F9FF),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF0284C7).withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: const [
-                    Icon(Icons.trending_up, color: Color(0xFF38BDF8), size: 14),
+                    Icon(Icons.trending_up, color: Color(0xFF0284C7), size: 14),
                     SizedBox(width: 4),
                     Text(
                       '+34% ce mois',
                       style: TextStyle(
-                        color: Color(0xFF38BDF8),
+                        color: Color(0xFF0284C7),
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
@@ -302,7 +293,7 @@ class _DashboardTabState extends State<DashboardTab> {
           Text(
             isArabic ? 'إجمالي الأجهزة المباعة والمستخدمين' : 'CONDUCTEURS PROTÉGÉS PAR LE BOÎTIER',
             style: const TextStyle(
-              color: Color(0xFF94A3B8),
+              color: Color(0xFF64748B),
               fontSize: 11,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.6,
@@ -316,7 +307,7 @@ class _DashboardTabState extends State<DashboardTab> {
               Text(
                 '$totalUsersCount',
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: Color(0xFF0F172A),
                   fontSize: 42,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -1,
@@ -327,14 +318,14 @@ class _DashboardTabState extends State<DashboardTab> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
+                  color: const Color(0xFFFEF3C7),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.5)),
                 ),
                 child: Text(
                   isArabic ? 'أجهزة نشطة' : 'Boîtiers Actifs',
                   style: const TextStyle(
-                    color: Color(0xFFFBBF24),
+                    color: Color(0xFF92400E),
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
@@ -348,7 +339,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 ? 'عدد المستخدمين الذين اشتروا واستعملوا جهاز إنذار الحوادث سلامتك'
                 : 'Utilisateurs ayant acheté et installé le boîtier Slamtek sur leur véhicule.',
             style: const TextStyle(
-              color: Color(0xFFCBD5E1),
+              color: Color(0xFF475569),
               fontSize: 12,
               height: 1.35,
             ),
@@ -363,7 +354,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   icon: Icons.directions_car_rounded,
                   count: '$carsCount',
                   label: isArabic ? 'سيارات' : 'Voitures (78%)',
-                  accentColor: const Color(0xFF38BDF8),
+                  accentColor: const Color(0xFF0284C7),
                 ),
               ),
               const SizedBox(width: 8),
@@ -372,7 +363,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   icon: Icons.two_wheeler_rounded,
                   count: '$motosCount',
                   label: isArabic ? 'دراجات نارية' : 'Motos (22%)',
-                  accentColor: const Color(0xFFF43F5E),
+                  accentColor: const Color(0xFFE11D48),
                 ),
               ),
               const SizedBox(width: 8),
@@ -381,7 +372,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   icon: Icons.wifi_tethering,
                   count: '$onlineCount',
                   label: isArabic ? 'متصل الآن' : 'En ligne (68%)',
-                  accentColor: const Color(0xFF10B981),
+                  accentColor: const Color(0xFF059669),
                 ),
               ),
             ],
@@ -392,13 +383,13 @@ class _DashboardTabState extends State<DashboardTab> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.location_on, color: Color(0xFF38BDF8), size: 20),
+                const Icon(Icons.location_on, color: Color(0xFF0284C7), size: 20),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -410,7 +401,7 @@ class _DashboardTabState extends State<DashboardTab> {
                           Text(
                             isArabic ? 'تغطية الولايات الوطنية' : 'Couverture du Territoire',
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: Color(0xFF1E293B),
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
@@ -418,7 +409,7 @@ class _DashboardTabState extends State<DashboardTab> {
                           const Text(
                             '58 / 58 Wilayas (100%)',
                             style: TextStyle(
-                              color: Color(0xFF34D399),
+                              color: Color(0xFF059669),
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
@@ -432,7 +423,7 @@ class _DashboardTabState extends State<DashboardTab> {
                           value: 1.0,
                           minHeight: 6,
                           color: Color(0xFF10B981),
-                          backgroundColor: Color(0xFF334155),
+                          backgroundColor: Color(0xFFE2E8F0),
                         ),
                       ),
                     ],
@@ -455,9 +446,9 @@ class _DashboardTabState extends State<DashboardTab> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
       decoration: BoxDecoration(
-        color: accentColor.withValues(alpha: 0.12),
+        color: accentColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accentColor.withValues(alpha: 0.3)),
+        border: Border.all(color: accentColor.withValues(alpha: 0.25)),
       ),
       child: Column(
         children: [
@@ -466,7 +457,7 @@ class _DashboardTabState extends State<DashboardTab> {
           Text(
             count,
             style: const TextStyle(
-              color: Colors.white,
+              color: Color(0xFF0F172A),
               fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
@@ -475,7 +466,7 @@ class _DashboardTabState extends State<DashboardTab> {
           Text(
             label,
             style: TextStyle(
-              color: accentColor.withValues(alpha: 0.9),
+              color: accentColor,
               fontSize: 9.5,
               fontWeight: FontWeight.w600,
             ),
@@ -498,7 +489,6 @@ class _DashboardTabState extends State<DashboardTab> {
     return SectionCard(
       title: isArabic ? 'نمو مبيعات الجهاز والمستخدمين' : 'Croissance des Ventes du Boîtier Slamtek',
       icon: Icons.auto_graph,
-      accentColor: const Color(0xFF38BDF8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -507,19 +497,18 @@ class _DashboardTabState extends State<DashboardTab> {
             children: [
               Text(
                 isArabic ? 'تطور عدد الأجهزة المباعة شهرياً' : 'Évolution cumulée des boîtiers vendus',
-                style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.18),
+                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
                 ),
                 child: const Text(
                   '+735% en 6 mois',
                   style: TextStyle(
-                    color: Color(0xFF34D399),
+                    color: Color(0xFF059669),
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
@@ -535,14 +524,7 @@ class _DashboardTabState extends State<DashboardTab> {
               child: BarChart(
                 BarChartData(
                   maxY: 3200,
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    getDrawingHorizontalLine: (v) => FlLine(
-                      color: Colors.white.withValues(alpha: 0.08),
-                      strokeWidth: 1,
-                    ),
-                  ),
+                  gridData: const FlGridData(show: true, drawVerticalLine: false),
                   borderData: FlBorderData(show: false),
                   titlesData: FlTitlesData(
                     topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -568,7 +550,7 @@ class _DashboardTabState extends State<DashboardTab> {
                           final i = v.toInt();
                           if (i >= 0 && i < months.length) {
                             return Text(months[i],
-                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFFCBD5E1)));
+                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600));
                           }
                           return const SizedBox.shrink();
                         },
@@ -587,7 +569,7 @@ class _DashboardTabState extends State<DashboardTab> {
                             gradient: LinearGradient(
                               colors: i == sales.length - 1
                                   ? [const Color(0xFF0284C7), const Color(0xFF38BDF8)]
-                                  : [const Color(0xFF1E293B), const Color(0xFF475569)],
+                                  : [const Color(0xFF334155), const Color(0xFF64748B)],
                               begin: Alignment.bottomCenter,
                               end: Alignment.topCenter,
                             ),
@@ -604,7 +586,7 @@ class _DashboardTabState extends State<DashboardTab> {
             isArabic
                 ? 'وصل عدد الأجهزة المباعة إلى 2,840 جهازاً مستخدماً في كل ولايات الجزائر.'
                 : 'Forte accélération des commandes grâce aux partenariats avec les motards et flottes automobiles.',
-            style: const TextStyle(fontSize: 11, color: Color(0xFFCBD5E1)),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
           ),
         ],
       ),
@@ -630,7 +612,6 @@ class _DashboardTabState extends State<DashboardTab> {
     return SectionCard(
       title: isArabic ? 'آخر المستخدمين الذين اشتروا وفعلوا الجهاز' : 'Derniers Utilisateurs Ayant Activé le Boîtier',
       icon: Icons.history_edu_outlined,
-      accentColor: const Color(0xFF38BDF8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -641,7 +622,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 children: [
                   CircleAvatar(
                     radius: 18,
-                    backgroundColor: const Color(0xFF1E293B),
+                    backgroundColor: const Color(0xFF0F172A),
                     child: Icon(
                       d.$3.contains('Yamaha') || d.$3.contains('Kawasaki')
                           ? Icons.two_wheeler
@@ -659,19 +640,19 @@ class _DashboardTabState extends State<DashboardTab> {
                           children: [
                             Text(
                               d.$1,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                             ),
                             const SizedBox(width: 6),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                               decoration: BoxDecoration(
-                                color: (d.$6 ? const Color(0xFF10B981) : Colors.grey).withValues(alpha: 0.2),
+                                color: (d.$6 ? const Color(0xFF10B981) : Colors.grey).withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
                                 d.$6 ? 'Actif' : 'Veille',
                                 style: TextStyle(
-                                  color: d.$6 ? const Color(0xFF34D399) : const Color(0xFF94A3B8),
+                                  color: d.$6 ? const Color(0xFF10B981) : Colors.grey,
                                   fontSize: 9.5,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -682,7 +663,7 @@ class _DashboardTabState extends State<DashboardTab> {
                         const SizedBox(height: 2),
                         Text(
                           '${d.$2} • ${d.$3}',
-                          style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -697,20 +678,20 @@ class _DashboardTabState extends State<DashboardTab> {
                         style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF38BDF8),
+                          color: Color(0xFF0F172A),
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         d.$5,
-                        style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                        style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            if (d != recentDrivers.last) Divider(height: 12, color: Colors.white.withValues(alpha: 0.08)),
+            if (d != recentDrivers.last) const Divider(height: 12),
           ],
         ],
       ),
@@ -734,7 +715,6 @@ class _DashboardTabState extends State<DashboardTab> {
     return SectionCard(
       title: isArabic ? 'توزيع المستخدمين حسب الولايات' : 'Top Wilayas par Nombre d\'Utilisateurs',
       icon: Icons.pin_drop_outlined,
-      accentColor: const Color(0xFF10B981),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -747,7 +727,7 @@ class _DashboardTabState extends State<DashboardTab> {
                     width: 140,
                     child: Text(
                       w.$1,
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -757,8 +737,8 @@ class _DashboardTabState extends State<DashboardTab> {
                       child: LinearProgressIndicator(
                         value: w.$3,
                         minHeight: 10,
-                        color: const Color(0xFF10B981),
-                        backgroundColor: const Color(0xFF1E293B),
+                        color: AppColors.brand,
+                        backgroundColor: AppColors.brand.withValues(alpha: 0.12),
                       ),
                     ),
                   ),
@@ -767,7 +747,7 @@ class _DashboardTabState extends State<DashboardTab> {
                     width: 58,
                     child: Text(
                       '${w.$2} (${(w.$3 * 100).toInt()}%)',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF38BDF8)),
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                       textAlign: TextAlign.end,
                     ),
                   ),
@@ -783,22 +763,11 @@ class _DashboardTabState extends State<DashboardTab> {
   // ------------------------------------------------------------------ Safety & Lives Saved Summary
   Widget _safetyImpactSummary(BuildContext context, List<AlertModel> alerts, bool isArabic) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.35), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.45),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        color: const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.red.shade200),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -807,12 +776,11 @@ class _DashboardTabState extends State<DashboardTab> {
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444).withValues(alpha: 0.2),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFEF4444)),
                 ),
-                child: const Icon(Icons.health_and_safety, color: Color(0xFFF87171), size: 20),
+                child: const Icon(Icons.health_and_safety, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -822,16 +790,15 @@ class _DashboardTabState extends State<DashboardTab> {
                     Text(
                       isArabic ? 'الحصيلة الإيجابية لحماية الأرواح' : 'IMPACT SÉCURITÉ ROUTIÈRE SLAMTEK',
                       style: const TextStyle(
-                        color: Color(0xFFF87171),
+                        color: Colors.red,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
-                        letterSpacing: 0.4,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       isArabic ? '142 تدخلاً سريعاً تم إرساله تلقائياً' : '142 alertes automatiques transmises aux secours',
-                      style: const TextStyle(color: Color(0xFFFCA5A5), fontSize: 11),
+                      style: TextStyle(color: Colors.red.shade900, fontSize: 11),
                     ),
                   ],
                 ),
@@ -841,11 +808,11 @@ class _DashboardTabState extends State<DashboardTab> {
           const SizedBox(height: 12),
           Row(
             children: [
-              _metricTile('142', 'Secours Alertés', const Color(0xFFEF4444)),
+              _metricTile('142', 'Secours Alertés', const Color(0xFFDC2626)),
               const SizedBox(width: 8),
-              _metricTile('6 min 45s', 'Délai d\'arrivée', const Color(0xFF10B981)),
+              _metricTile('6 min 45s', 'Délai d\'arrivée', const Color(0xFF059669)),
               const SizedBox(width: 8),
-              _metricTile('99.8%', 'Précision Choc', const Color(0xFF38BDF8)),
+              _metricTile('99.8%', 'Précision Choc', const Color(0xFF2563EB)),
             ],
           ),
         ],
@@ -856,17 +823,17 @@ class _DashboardTabState extends State<DashboardTab> {
   Widget _metricTile(String value, String label, Color color) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Column(
           children: [
-            Text(value, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+            Text(value, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.bold)),
             const SizedBox(height: 2),
-            Text(label, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600), maxLines: 1),
+            Text(label, style: const TextStyle(fontSize: 9.5, color: Color(0xFF64748B)), maxLines: 1),
           ],
         ),
       ),
@@ -1177,27 +1144,22 @@ class _StatGrid extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                 ),
                 child: Row(
                   children: [
-                    Icon(s.icon, color: s.color ?? const Color(0xFF38BDF8)),
+                    Icon(s.icon, color: s.color ?? Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            s.value,
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-                          ),
-                          Text(
-                            s.label,
-                            style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          Text(s.value,
+                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                          Text(s.label,
+                              style: Theme.of(context).textTheme.bodySmall,
+                              overflow: TextOverflow.ellipsis),
                         ],
                       ),
                     ),

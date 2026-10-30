@@ -68,7 +68,7 @@ class _PhoneFrameWrapperState extends State<PhoneFrameWrapper> {
     final scale = (availableHeight < dev.height) ? (availableHeight / dev.height) : 1.0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0F19),
+      backgroundColor: const Color(0xFFF1F5F9),
       body: SafeArea(
         child: Column(
           children: [
@@ -76,17 +76,24 @@ class _PhoneFrameWrapperState extends State<PhoneFrameWrapper> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF111827),
-                border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
+                color: Colors.white,
+                border: Border(bottom: BorderSide(color: const Color(0xFFE2E8F0))),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.phone_android, color: Colors.redAccent, size: 20),
+                  const Icon(Icons.phone_android, color: Color(0xFF10B981), size: 20),
                   const SizedBox(width: 10),
                   const Text(
                     'Slamtek — Rendu Mobile',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFF0F172A),
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                       letterSpacing: 0.3,
@@ -96,8 +103,9 @@ class _PhoneFrameWrapperState extends State<PhoneFrameWrapper> {
                   // Device Switcher
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1F2937),
+                      color: const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
                     ),
                     padding: const EdgeInsets.all(2),
                     child: Row(
@@ -109,13 +117,13 @@ class _PhoneFrameWrapperState extends State<PhoneFrameWrapper> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: selected ? Colors.redAccent : Colors.transparent,
+                              color: selected ? const Color(0xFF10B981) : Colors.transparent,
                               borderRadius: BorderRadius.circular(18),
                             ),
                             child: Text(
                               _devices[idx].name,
                               style: TextStyle(
-                                color: selected ? Colors.white : Colors.white70,
+                                color: selected ? Colors.white : const Color(0xFF64748B),
                                 fontSize: 12,
                                 fontWeight: selected ? FontWeight.bold : FontWeight.normal,
                               ),
@@ -129,7 +137,7 @@ class _PhoneFrameWrapperState extends State<PhoneFrameWrapper> {
                   // Fullscreen toggle button
                   IconButton(
                     tooltip: 'Passer en plein écran',
-                    icon: const Icon(Icons.fullscreen, color: Colors.white70),
+                    icon: const Icon(Icons.fullscreen, color: Color(0xFF64748B)),
                     onPressed: () => setState(() => _phoneMode = false),
                   ),
                 ],
@@ -197,7 +205,7 @@ class _PhoneFrameWrapperState extends State<PhoneFrameWrapper> {
                                     const Text(
                                       '09:41',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: Color(0xFF1E293B),
                                         fontSize: 13,
                                         fontWeight: FontWeight.bold,
                                         letterSpacing: -0.2,
@@ -206,21 +214,21 @@ class _PhoneFrameWrapperState extends State<PhoneFrameWrapper> {
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(Icons.signal_cellular_4_bar, size: 14, color: Colors.white),
+                                        const Icon(Icons.signal_cellular_4_bar, size: 14, color: Color(0xFF1E293B)),
                                         const SizedBox(width: 4),
-                                        const Icon(Icons.wifi, size: 14, color: Colors.white),
+                                        const Icon(Icons.wifi, size: 14, color: Color(0xFF1E293B)),
                                         const SizedBox(width: 5),
                                         Container(
                                           width: 20,
                                           height: 10,
                                           decoration: BoxDecoration(
-                                            border: Border.all(color: Colors.white, width: 1.2),
+                                            border: Border.all(color: const Color(0xFF1E293B), width: 1.2),
                                             borderRadius: BorderRadius.circular(2.5),
                                           ),
                                           padding: const EdgeInsets.all(1),
                                           child: Container(
                                             decoration: BoxDecoration(
-                                              color: Colors.white,
+                                              color: const Color(0xFF1E293B),
                                               borderRadius: BorderRadius.circular(1),
                                             ),
                                           ),

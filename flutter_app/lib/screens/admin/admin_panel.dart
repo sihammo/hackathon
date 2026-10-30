@@ -41,23 +41,12 @@ class _AdminPanelState extends State<AdminPanel> {
       WilayaNumbersTab(),
     ];
     return Scaffold(
-      backgroundColor: const Color(0xFF0B1120),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        shape: Border(
-          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        title: Text(
-          titles[_tab],
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
-        ),
+        title: Text(titles[_tab]),
         actions: [
           IconButton(
             tooltip: context.tr('nav_settings'),
-            icon: const Icon(Icons.settings_outlined, color: Color(0xFF94A3B8)),
+            icon: const Icon(Icons.settings_outlined),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const AdminSettingsScreen()),
             ),
@@ -65,39 +54,16 @@ class _AdminPanelState extends State<AdminPanel> {
         ],
       ),
       body: IndexedStack(index: _tab, children: pages),
-      bottomNavigationBar: NavigationBarTheme(
-        data: NavigationBarThemeData(
-          backgroundColor: const Color(0xFF0F172A),
-          indicatorColor: const Color(0xFF10B981).withValues(alpha: 0.2),
-          iconTheme: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) {
-              return const IconThemeData(color: Color(0xFF34D399));
-            }
-            return const IconThemeData(color: Color(0xFF94A3B8));
-          }),
-          labelTextStyle: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) {
-              return const TextStyle(color: Color(0xFF34D399), fontWeight: FontWeight.bold, fontSize: 11);
-            }
-            return const TextStyle(color: Color(0xFF94A3B8), fontSize: 11);
-          }),
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
-          ),
-          child: NavigationBar(
-            selectedIndex: _tab,
-            onDestinationSelected: (i) => setState(() => _tab = i),
-            destinations: [
-              NavigationDestination(icon: const Icon(Icons.dashboard_outlined), selectedIcon: const Icon(Icons.dashboard), label: context.tr('admin_dashboard')),
-              NavigationDestination(icon: const Icon(Icons.notifications_active_outlined), selectedIcon: const Icon(Icons.notifications_active), label: context.tr('admin_alerts')),
-              NavigationDestination(icon: const Icon(Icons.map_outlined), selectedIcon: const Icon(Icons.map), label: context.tr('admin_map')),
-              NavigationDestination(icon: const Icon(Icons.people_outline), selectedIcon: const Icon(Icons.people), label: context.tr('admin_users')),
-              NavigationDestination(icon: const Icon(Icons.local_phone_outlined), selectedIcon: const Icon(Icons.local_phone), label: context.tr('admin_wilayas')),
-            ],
-          ),
-        ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _tab,
+        onDestinationSelected: (i) => setState(() => _tab = i),
+        destinations: [
+          NavigationDestination(icon: const Icon(Icons.dashboard_outlined), selectedIcon: const Icon(Icons.dashboard), label: context.tr('admin_dashboard')),
+          NavigationDestination(icon: const Icon(Icons.notifications_active_outlined), selectedIcon: const Icon(Icons.notifications_active), label: context.tr('admin_alerts')),
+          NavigationDestination(icon: const Icon(Icons.map_outlined), selectedIcon: const Icon(Icons.map), label: context.tr('admin_map')),
+          NavigationDestination(icon: const Icon(Icons.people_outline), selectedIcon: const Icon(Icons.people), label: context.tr('admin_users')),
+          NavigationDestination(icon: const Icon(Icons.local_phone_outlined), selectedIcon: const Icon(Icons.local_phone), label: context.tr('admin_wilayas')),
+        ],
       ),
     );
   }
