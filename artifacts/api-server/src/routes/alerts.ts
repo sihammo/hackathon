@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { AlertModel } from "../models";
 import { SEED_ALERTS, isMongoConnected } from "../lib/db";
+import { getPgAlerts, createPgAlert } from "../lib/postgres";
 
 const router = Router();
 let memoryAlerts: any[] = [...SEED_ALERTS];
@@ -9,6 +10,17 @@ let memoryAlerts: any[] = [...SEED_ALERTS];
 router.get("/", async (req: Request, res: Response) => {
   try {
     const { userId, wilaya, status } = req.query;
+
+    try {
+      const pgAlerts = await getPgAlerts(
+        userId ? String(userId) : undefined,
+        wilaya ? Number(wilaya) : undefined,
+        status ? String(status) : undefined
+      );
+      if (pgAlerts.length > 0) return res.json(pgAlerts);
+    } catch {
+      // Fallback
+    }
 
     if (isMongoConnected()) {
       const query: any = {};
@@ -29,7 +41,7 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/alerts (New accident or SOS triggered)
+// POST /api/alerts
 router.post("/", async (req: Request, res: Response) => {
   try {
     const {
@@ -60,7 +72,7 @@ router.post("/", async (req: Request, res: Response) => {
       lng: lng || 3.0588,
       wilayaCode: Number(wilayaCode) || 16,
       vehicleType: vehicleType || "car",
-      status: "sent" as const,
+      status: "sent",
       trigger: trigger || "impact",
       peakG: peakG || 4.5,
       tilt: tilt || 15.0,
@@ -69,67 +81,22 @@ router.post("/", async (req: Request, res: Response) => {
       notifiedNumbers: notifiedNumbers || ["14", "17"],
       testMode: false,
       createdAt: now,
-      updatedAt: now,
     };
+
+    try {
+      const created = await createPgAlert(newAlert);
+      if (created) return res.status(201).json({ success: true, alert: created });
+    } catch {
+      // Fallback
+    }
 
     if (isMongoConnected()) {
       const created = await AlertModel.create(newAlert);
       return res.status(201).json({ success: true, alert: created });
     }
 
-    memoryAlerts.unshift(newAlert as any);
+    memoryAlerts.unshift(newAlert);
     return res.status(201).json({ success: true, alert: newAlert });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
-// PUT /api/alerts/:id/status (Update accident status - arrived, dispatched, resolved)
-router.put("/:id/status", async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { status, responder } = req.body;
-
-    if (!status) return res.status(400).json({ error: "Status is required" });
-
-    const now = new Date();
-
-    if (isMongoConnected()) {
-      const alert = await AlertModel.findOne({ id });
-      if (!alert) return res.status(404).json({ error: "Alert not found" });
-
-      alert.status = status;
-      if (!alert.statusTimestamps) alert.statusTimestamps = {} as any;
-      (alert.statusTimestamps as any)[status] = now;
-
-      if (responder) {
-        if (!alert.responses) alert.responses = {} as any;
-        (alert.responses as any)[responder] = {
-          status,
-          timestamps: { [status]: now },
-        };
-      }
-
-      alert.markModified("statusTimestamps");
-      alert.markModified("responses");
-      await alert.save();
-      return res.json({ success: true, alert });
-    }
-
-    const index = memoryAlerts.findIndex((a: any) => a.id === id);
-    if (index === -1) return res.status(404).json({ error: "Alert not found" });
-
-    const current = memoryAlerts[index];
-    memoryAlerts[index] = {
-      ...current,
-      status,
-      statusTimestamps: {
-        ...(current.statusTimestamps || {}),
-        [status]: now,
-      },
-    };
-
-    return res.json({ success: true, alert: memoryAlerts[index] });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }

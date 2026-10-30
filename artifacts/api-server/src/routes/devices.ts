@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { DeviceModel } from "../models";
 import { SEED_DEVICES, isMongoConnected } from "../lib/db";
+import { getPgDevices, updatePgDeviceTelemetry } from "../lib/postgres";
 
 const router = Router();
 let memoryDevices = [...SEED_DEVICES];
@@ -9,6 +10,14 @@ let memoryDevices = [...SEED_DEVICES];
 router.get("/", async (req: Request, res: Response) => {
   try {
     const { userId } = req.query;
+
+    // 1. Try Supabase PostgreSQL
+    try {
+      const pgDevs = await getPgDevices(userId ? String(userId) : undefined);
+      if (pgDevs.length > 0) return res.json(pgDevs);
+    } catch {
+      // Fallback
+    }
 
     if (isMongoConnected()) {
       const query = userId ? { userId } : {};
@@ -24,49 +33,37 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/devices/:id
-router.get("/:id", async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-
-    if (isMongoConnected()) {
-      const device = await DeviceModel.findOne({ id });
-      if (!device) return res.status(404).json({ error: "Device not found" });
-      return res.json(device);
-    }
-
-    const device = memoryDevices.find((d) => d.id === id);
-    if (!device) return res.status(404).json({ error: "Device not found" });
-    return res.json(device);
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
-// POST /api/devices/telemetry (From ESP32 IoT Box)
+// POST /api/devices/telemetry
 router.post("/telemetry", async (req: Request, res: Response) => {
   try {
     const { id, batteryLevel, signalStrength, connected } = req.body;
-
     if (!id) return res.status(400).json({ error: "Device ID is required" });
 
-    const update = {
-      batteryLevel: batteryLevel ?? 95,
-      signalStrength: signalStrength ?? -70,
-      connected: connected ?? true,
-      lastSeen: new Date(),
-    };
+    try {
+      const updated = await updatePgDeviceTelemetry(id, batteryLevel, signalStrength, connected);
+      if (updated) return res.json({ success: true, device: updated });
+    } catch {
+      // Fallback
+    }
 
     if (isMongoConnected()) {
-      const updated = await DeviceModel.findOneAndUpdate({ id }, update, {
-        new: true,
-      });
+      const updated = await DeviceModel.findOneAndUpdate(
+        { id },
+        { batteryLevel, signalStrength, connected, lastSeen: new Date() },
+        { new: true }
+      );
       return res.json({ success: true, device: updated });
     }
 
     const index = memoryDevices.findIndex((d) => d.id === id);
     if (index !== -1) {
-      memoryDevices[index] = { ...memoryDevices[index], ...update } as any;
+      memoryDevices[index] = {
+        ...memoryDevices[index],
+        batteryLevel: batteryLevel ?? memoryDevices[index].batteryLevel,
+        signalStrength: signalStrength ?? memoryDevices[index].signalStrength,
+        connected: connected ?? true,
+        lastSeen: new Date(),
+      };
       return res.json({ success: true, device: memoryDevices[index] });
     }
 

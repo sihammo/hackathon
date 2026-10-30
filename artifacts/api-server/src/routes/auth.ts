@@ -1,24 +1,32 @@
 import { Router, type Request, type Response } from "express";
 import { UserModel } from "../models";
 import { SEED_USERS, isMongoConnected } from "../lib/db";
+import { getPgUserByLogin, getPgUserByUid, isPgConnected } from "../lib/postgres";
 
 const router = Router();
-
-// In-memory fallback if Mongo not yet connected
 let memoryUsers = [...SEED_USERS];
 
 // POST /api/auth/login
 router.post("/login", async (req: Request, res: Response) => {
   try {
     const { username, password, phone } = req.body;
+    const login = username || phone;
 
-    if (!username && !phone) {
+    if (!login) {
       return res.status(400).json({ error: "Username or phone is required" });
     }
 
     let user: any = null;
 
-    if (isMongoConnected()) {
+    // 1. Try Supabase PostgreSQL first
+    try {
+      user = await getPgUserByLogin(login);
+    } catch {
+      // Fall through to Mongo or memory
+    }
+
+    // 2. Try MongoDB if not found in PG
+    if (!user && isMongoConnected()) {
       if (username) {
         user = await UserModel.findOne({
           username: username.toLowerCase().trim(),
@@ -26,7 +34,11 @@ router.post("/login", async (req: Request, res: Response) => {
       } else if (phone) {
         user = await UserModel.findOne({ phone: phone.trim() });
       }
-    } else {
+      if (user && user.toObject) user = user.toObject();
+    }
+
+    // 3. Fallback to seed memory
+    if (!user) {
       user = memoryUsers.find(
         (u) =>
           (username && u.username.toLowerCase() === username.toLowerCase().trim()) ||
@@ -46,15 +58,14 @@ router.post("/login", async (req: Request, res: Response) => {
       return res.status(403).json({ error: "Compte désactivé / الحساب معطل" });
     }
 
-    // Return sanitized user object
-    const userObj = user.toObject ? user.toObject() : { ...user };
-    delete userObj.password;
+    const { password: _, ...userSafe } = user;
 
     return res.json({
       success: true,
       message: "Connexion réussie / تم تسجيل الدخول بنجاح",
-      token: `slamtek-token-${userObj.uid}-${Date.now()}`,
-      user: userObj,
+      token: `slamtek-token-${userSafe.uid}-${Date.now()}`,
+      database: isPgConnected() ? "supabase_postgresql" : isMongoConnected() ? "mongodb" : "in_memory",
+      user: userSafe,
     });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
@@ -63,58 +74,29 @@ router.post("/login", async (req: Request, res: Response) => {
 
 // GET /api/auth/me
 router.get("/me", async (req: Request, res: Response) => {
-  const uid = (req.query.uid as string) || "demo-user-1";
-
-  if (isMongoConnected()) {
-    const user = await UserModel.findOne({ uid });
-    if (!user) return res.status(404).json({ error: "User not found" });
-    const userObj = user.toObject();
-    delete (userObj as any).password;
-    return res.json(userObj);
-  }
-
-  const user = memoryUsers.find((u) => u.uid === uid);
-  if (!user) return res.status(404).json({ error: "User not found" });
-  const { password, ...safe } = user;
-  return res.json(safe);
-});
-
-// POST /api/auth/register
-router.post("/register", async (req: Request, res: Response) => {
   try {
-    const { fullName, username, password, phone, wilayaCode, vehicleType, insuranceCompany } = req.body;
+    const uid = (req.query.uid as string) || "demo-user-1";
 
-    if (!fullName || !username || !phone) {
-      return res.status(400).json({ error: "Informations incomplètes" });
+    let user: any = null;
+    try {
+      user = await getPgUserByUid(uid);
+    } catch {
+      // fallback
     }
 
-    const uid = `u-${Date.now()}`;
-    const newUser = {
-      uid,
-      fullName,
-      username: username.toLowerCase().trim(),
-      password: password || "slamtek123",
-      phone: phone.trim(),
-      wilayaCode: Number(wilayaCode) || 16,
-      role: "user" as const,
-      disabled: false,
-      vehicleType: vehicleType || "car",
-      testMode: true,
-      testPhoneNumber: phone,
-      insuranceCompany: insuranceCompany || "CAAT",
-      avatarUrl: "/assets/images/karim.jpg",
-    };
-
-    if (isMongoConnected()) {
-      const created = await UserModel.create(newUser);
-      const userObj = created.toObject();
-      delete (userObj as any).password;
-      return res.status(201).json({ success: true, user: userObj });
+    if (!user && isMongoConnected()) {
+      const doc = await UserModel.findOne({ uid }).select("-password");
+      if (doc) user = doc.toObject();
     }
 
-    memoryUsers.push(newUser as any);
-    const { password: _, ...safe } = newUser;
-    return res.status(201).json({ success: true, user: safe });
+    if (!user) {
+      user = memoryUsers.find((u) => u.uid === uid);
+    }
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const { password: _, ...safe } = user;
+    return res.json(safe);
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }

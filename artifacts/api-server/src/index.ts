@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { testPgConnection } from "./lib/postgres";
 import { connectMongo } from "./lib/db";
 
 const rawPort = process.env["PORT"] ?? "5000";
@@ -9,9 +10,13 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-// Connect to MongoDB and start listening
+// Initialize Supabase PostgreSQL & MongoDB connections
+testPgConnection().catch((err) => {
+  logger.warn({ err }, "Initial PostgreSQL Supabase check deferred");
+});
+
 connectMongo().catch((err) => {
-  logger.warn({ err }, "Initial MongoDB connection attempt deferred");
+  logger.warn({ err }, "Initial MongoDB check deferred");
 });
 
 app.listen(port, (err) => {
