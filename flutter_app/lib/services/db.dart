@@ -63,6 +63,57 @@ class Db {
   Future<void> setUserDisabled(String uid, bool disabled) =>
       userDoc(uid).update({'disabled': disabled});
 
+  Future<AppUser> createUserByAdmin({
+    required String fullName,
+    required String username,
+    required String password,
+    required String phone,
+    required int wilayaCode,
+    required VehicleType vehicleType,
+    required String role,
+  }) async {
+    final uid = 'user_${DateTime.now().millisecondsSinceEpoch}';
+    final user = AppUser(
+      uid: uid,
+      fullName: fullName.trim(),
+      username: username.trim().toLowerCase(),
+      phone: phone.trim(),
+      wilayaCode: wilayaCode,
+      role: role,
+      disabled: false,
+      createdAt: DateTime.now(),
+      vehicleType: vehicleType,
+      testMode: true,
+      testPhoneNumber: phone.trim(),
+    );
+    await userDoc(uid).set({
+      'fullName': user.fullName,
+      'username': user.username,
+      'phone': user.phone,
+      'wilayaCode': user.wilayaCode,
+      'role': user.role,
+      'disabled': user.disabled,
+      'vehicleType': user.vehicleType.id,
+      'testMode': user.testMode,
+      'testPhoneNumber': user.testPhoneNumber,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    return user;
+  }
+
+  Future<void> deleteUser(String uid) async {
+    await userDoc(uid).delete();
+  }
+
+  Future<void> clearAllUsers({required String currentAdminUid}) async {
+    final snaps = await users.get();
+    for (final doc in snaps.docs) {
+      if (doc.id != currentAdminUid) {
+        await doc.reference.delete();
+      }
+    }
+  }
+
   // ---------------------------------------------------------------- contacts
   Stream<List<EmergencyContact>> contactsOf(String uid) => contacts
       .where('userId', isEqualTo: uid)

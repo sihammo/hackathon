@@ -59,6 +59,7 @@ Thumbs.db
 .flutter-plugins
 .flutter-plugins-dependencies
 build/
+*.apk
 
 # Agents & IDE
 .agents/

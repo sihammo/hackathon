@@ -63,8 +63,47 @@ class EmergencyService {
 
   static bool isTestMode(AppUser u, AppConfig c) => c.forceTestMode || u.testMode;
 
+  static String cleanPhoneNumber(String raw) {
+    final s = raw.trim();
+    if (s.isEmpty) return '';
+    final hasPlus = s.startsWith('+');
+    final digits = s.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) return '';
+    return hasPlus ? '+$digits' : digits;
+  }
+
   static String testNumber(AppUser u, AppConfig c) =>
-      u.testPhoneNumber.trim().isNotEmpty ? u.testPhoneNumber.trim() : c.defaultTestNumber.trim();
+      cleanPhoneNumber(u.testPhoneNumber).isNotEmpty
+          ? cleanPhoneNumber(u.testPhoneNumber)
+          : cleanPhoneNumber(c.defaultTestNumber);
+
+  static String resolveCallTarget(AppUser user, List<EmergencyContact> contacts, AppConfig config) {
+    final userTest = cleanPhoneNumber(user.testPhoneNumber);
+    final userPhone = cleanPhoneNumber(user.phone);
+
+    // 1. If user explicitly configured a test phone number different from user's own login phone
+    if (userTest.isNotEmpty && userTest != userPhone) {
+      return userTest;
+    }
+    // 2. If user registered emergency contacts in the contacts tab
+    final validContacts = contacts
+        .map((c) => cleanPhoneNumber(c.phone))
+        .where((p) => p.isNotEmpty)
+        .toList();
+    if (validContacts.isNotEmpty) {
+      return validContacts.first;
+    }
+    // 3. User's test phone number even if equal to user phone
+    if (userTest.isNotEmpty) {
+      return userTest;
+    }
+    // 4. Fallback to default test number in config
+    final def = cleanPhoneNumber(config.defaultTestNumber);
+    if (def.isNotEmpty) {
+      return def;
+    }
+    return '0555999888';
+  }
 
   bool get _isAndroid => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
@@ -81,25 +120,87 @@ class EmergencyService {
           Permission.bluetooth,
       ];
 
+  Future<bool> isLocationGranted() async {
+    if (kIsWeb) return true;
+    try {
+      final s = await Permission.locationWhenInUse.status;
+      return s.isGranted || s.isLimited;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> isNotificationGranted() async {
+    if (kIsWeb) return true;
+    try {
+      final s = await Permission.notification.status;
+      return s.isGranted || s.isLimited;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> requestLocationPermission() async {
+    if (kIsWeb) return true;
+    try {
+      final s = await Permission.locationWhenInUse.request();
+      return s.isGranted || s.isLimited;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> requestNotificationPermission() async {
+    if (kIsWeb) return true;
+    try {
+      final s = await Permission.notification.request();
+      return s.isGranted || s.isLimited;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> requestAllCorePermissions() async {
+    if (kIsWeb) return;
+    try {
+      // 1. Request Location (essential for GPS position, safe routes, and wilaya)
+      await Permission.locationWhenInUse.request();
+      // 2. Request Notification (essential for real-time crash countdown and warnings)
+      await Permission.notification.request();
+      // 3. Request remaining communication/connectivity permissions
+      if (_isAndroid) {
+        await [
+          Permission.bluetoothScan,
+          Permission.bluetoothConnect,
+          Permission.sms,
+          Permission.phone,
+        ].request();
+      }
+    } catch (_) {}
+  }
+
   Future<bool> hasAllPermissions() async {
     if (kIsWeb) return true;
     try {
+      final loc = await isLocationGranted();
+      final notif = await isNotificationGranted();
+      if (!loc || !notif) return false;
       for (final p in _needed) {
         if (!await p.isGranted) return false;
       }
       return true;
     } catch (_) {
-      return true;
+      return false;
     }
   }
 
   Future<bool> requestPermissions() async {
     if (kIsWeb) return true;
     try {
-      final res = await _needed.request();
-      return res.values.every((s) => s.isGranted || s.isLimited);
+      await requestAllCorePermissions();
+      return await hasAllPermissions();
     } catch (_) {
-      return true;
+      return false;
     }
   }
 
@@ -155,24 +256,28 @@ class EmergencyService {
 
   Future<DispatchResult> dispatch(AppUser user, AccidentEvent e, PreparedAlert p) async {
     final test = isTestMode(user, p.config);
-    final testNum = testNumber(user, p.config);
 
-    // Authorities (replaced by the test number in test mode).
+    // Authorities (replaced by the resolved target number in test mode).
     final authorities = <String>[];
     String? callTarget;
+
+    final contactNumbers = p.contacts
+        .map((c) => cleanPhoneNumber(c.phone))
+        .where((n) => n.isNotEmpty)
+        .toList();
+
     if (test) {
-      if (testNum.isNotEmpty) {
-        authorities.add(testNum);
-        callTarget = testNum;
+      callTarget = resolveCallTarget(user, p.contacts, p.config);
+      if (callTarget.isNotEmpty) {
+        authorities.add(callTarget);
       }
     } else if (p.numbers != null) {
-      if (p.numbers!.police.isNotEmpty) authorities.add(p.numbers!.police);
-      if (p.numbers!.civilProtection.isNotEmpty) authorities.add(p.numbers!.civilProtection);
-      callTarget = p.numbers!.civilProtection.isNotEmpty
-          ? p.numbers!.civilProtection
-          : (p.numbers!.police.isNotEmpty ? p.numbers!.police : null);
+      final pol = cleanPhoneNumber(p.numbers!.police);
+      final civ = cleanPhoneNumber(p.numbers!.civilProtection);
+      if (pol.isNotEmpty) authorities.add(pol);
+      if (civ.isNotEmpty) authorities.add(civ);
+      callTarget = civ.isNotEmpty ? civ : (pol.isNotEmpty ? pol : null);
     }
-    final contactNumbers = p.contacts.map((c) => c.phone).where((n) => n.trim().isNotEmpty);
     callTarget ??= contactNumbers.isNotEmpty ? contactNumbers.first : null;
 
     final targets = _dedupe([...authorities, ...contactNumbers]);
@@ -207,7 +312,11 @@ class EmergencyService {
     } catch (_) {}
 
     String? called;
-    if (callTarget != null && await call(callTarget)) called = callTarget;
+    if (callTarget != null && callTarget.isNotEmpty) {
+      if (await call(callTarget)) {
+        called = callTarget;
+      }
+    }
 
     return DispatchResult(
       alertId: alertId,
@@ -215,7 +324,7 @@ class EmergencyService {
       smsFailed: failed,
       called: called,
       testMode: test,
-      missingTestNumber: test && testNum.isEmpty,
+      missingTestNumber: test && (callTarget == null || callTarget.isEmpty),
       hasLocation: p.point != null,
     );
   }
@@ -241,9 +350,17 @@ class EmergencyService {
 
   // ------------------------------------------------------------ platform
   Future<bool> sendSms(String number, String text) async {
+    final clean = cleanPhoneNumber(number);
+    if (clean.isEmpty) return false;
     if (_isAndroid) {
       try {
-        return await _channel.invokeMethod<bool>('sendSms', {'number': number, 'text': text}) ??
+        final status = await Permission.sms.status;
+        if (!status.isGranted) {
+          await Permission.sms.request();
+        }
+      } catch (_) {}
+      try {
+        return await _channel.invokeMethod<bool>('sendSms', {'number': clean, 'text': text}) ??
             false;
       } catch (_) {
         return false;
@@ -251,22 +368,31 @@ class EmergencyService {
     }
     // iOS cannot send SMS silently: open the composer instead.
     try {
-      return await launchUrl(Uri(scheme: 'sms', path: number, queryParameters: {'body': text}));
+      return await launchUrl(Uri(scheme: 'sms', path: clean, queryParameters: {'body': text}));
     } catch (_) {
       return false;
     }
   }
 
   Future<bool> call(String number) async {
+    final clean = cleanPhoneNumber(number);
+    if (clean.isEmpty) return false;
     if (_isAndroid) {
       try {
-        return await _channel.invokeMethod<bool>('call', {'number': number}) ?? false;
-      } catch (_) {
-        return false;
-      }
+        final status = await Permission.phone.status;
+        if (!status.isGranted) {
+          await Permission.phone.request();
+        }
+      } catch (_) {}
+      try {
+        final res = await _channel.invokeMethod<bool>('call', {'number': clean});
+        if (res == true) return true;
+      } catch (_) {}
     }
+    // Reliable fallback: launchUrl with tel scheme in external application mode
     try {
-      return await launchUrl(Uri(scheme: 'tel', path: number));
+      final uri = Uri(scheme: 'tel', path: clean);
+      return await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (_) {
       return false;
     }

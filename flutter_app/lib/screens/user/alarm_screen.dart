@@ -227,6 +227,36 @@ class _AlarmScreenState extends State<AlarmScreen> {
         const SizedBox(height: 24),
         Text(context.tr('alert_in_seconds').replaceAll('{s}', '$_left'),
             textAlign: TextAlign.center, style: const TextStyle(color: white, fontSize: 16)),
+        FutureBuilder<PreparedAlert>(
+          future: _prep,
+          builder: (context, snap) {
+            if (!snap.hasData) return const SizedBox.shrink();
+            final target = EmergencyService.resolveCallTarget(
+              widget.user,
+              snap.data!.contacts,
+              snap.data!.config,
+            );
+            if (target.isEmpty) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.phone_forwarded, size: 16, color: Colors.white70),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${context.tr('called')}: $target',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
         const Spacer(),
         SizedBox(
           width: double.infinity,

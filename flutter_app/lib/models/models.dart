@@ -102,6 +102,38 @@ class AppUser {
       avatarUrl: d['avatarUrl'] as String?,
     );
   }
+
+  Map<String, dynamic> toMap() => {
+        'uid': uid,
+        'fullName': fullName,
+        'username': username,
+        'phone': phone,
+        'wilayaCode': wilayaCode,
+        'role': role,
+        'disabled': disabled,
+        'createdAt': createdAt?.toIso8601String(),
+        'vehicleType': vehicleType.id,
+        'testMode': testMode,
+        'testPhoneNumber': testPhoneNumber,
+        'avatarUrl': avatarUrl,
+      };
+
+  factory AppUser.fromMap(Map<String, dynamic> d) {
+    return AppUser(
+      uid: (d['uid'] ?? '') as String,
+      fullName: (d['fullName'] ?? '') as String,
+      username: (d['username'] ?? '') as String,
+      phone: (d['phone'] ?? '') as String,
+      wilayaCode: (d['wilayaCode'] as num?)?.toInt() ?? 16,
+      role: (d['role'] ?? 'user') as String,
+      disabled: d['disabled'] == true,
+      createdAt: d['createdAt'] != null ? DateTime.tryParse(d['createdAt'].toString()) : null,
+      vehicleType: VehicleType.fromId(d['vehicleType'] as String?),
+      testMode: d['testMode'] != false,
+      testPhoneNumber: (d['testPhoneNumber'] ?? '') as String,
+      avatarUrl: d['avatarUrl'] as String?,
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -240,6 +272,24 @@ class EmergencyContact {
     final d = doc.data() ?? const {};
     return EmergencyContact(
       id: doc.id,
+      userId: (d['userId'] ?? '') as String,
+      name: (d['name'] ?? '') as String,
+      phone: (d['phone'] ?? '') as String,
+      relation: (d['relation'] ?? '') as String,
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'userId': userId,
+        'name': name,
+        'phone': phone,
+        'relation': relation,
+      };
+
+  factory EmergencyContact.fromMap(Map<String, dynamic> d) {
+    return EmergencyContact(
+      id: (d['id'] ?? '') as String,
       userId: (d['userId'] ?? '') as String,
       name: (d['name'] ?? '') as String,
       phone: (d['phone'] ?? '') as String,

@@ -33,11 +33,11 @@ Future<void> main() async {
   }
 
   final prefs = await SharedPreferences.getInstance();
-  final db = firebaseReady ? Db() : MockDb();
+  final db = firebaseReady ? Db() : MockDb(prefs);
   final auth = firebaseReady ? AuthService(db) : AuthService(db, null);
   final location = LocationService();
   final emergency = EmergencyService(db, location);
-  final session = SessionController(auth, db);
+  final session = SessionController(auth, db, prefs);
   final ble = BleService(prefs);
 
   runApp(

@@ -1,13 +1,18 @@
 import 'dart:async';
+import 'dart:convert';
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/constants.dart';
 import '../core/wilayas.dart';
 import '../models/models.dart';
 import 'db.dart';
 
-/// In-memory mock database for local development, web testing, and demonstrations
-/// when Firebase is not configured or in offline mode.
+/// In-memory & locally persisted mock database for local development, web testing,
+/// and standalone mobile usage when Firebase is not configured.
 class MockDb extends Db {
+  final SharedPreferences? _prefs;
+
   static final AppUser demoUser = AppUser(
     uid: 'demo-user-1',
     fullName: 'Karim Benali',
@@ -36,13 +41,14 @@ class MockDb extends Db {
     testPhoneNumber: '0555999888',
   );
 
-  final Map<String, AppUser> _users = {};
-  final List<EmergencyContact> _contacts = [];
-  final Map<int, WilayaNumbers> _wilayaNumbers = {};
+  static final Map<String, AppUser> _users = {};
+  static final Map<String, String> _passwords = {};
+  static final List<EmergencyContact> _contacts = [];
+  static final Map<int, WilayaNumbers> _wilayaNumbers = {};
   AppConfig _config = const AppConfig(forceTestMode: true, defaultTestNumber: '0555999888');
-  final List<DeviceInfo> _devices = [];
-  final List<AlertModel> _alerts = [];
-  final List<Hotspot> _hotspots = [];
+  static final List<DeviceInfo> _devices = [];
+  static final List<AlertModel> _alerts = [];
+  static final List<Hotspot> _hotspots = [];
 
   final _usersCtrl = StreamController<List<AppUser>>.broadcast();
   final _contactsCtrl = StreamController<List<EmergencyContact>>.broadcast();
@@ -52,13 +58,105 @@ class MockDb extends Db {
   final _alertsCtrl = StreamController<List<AlertModel>>.broadcast();
   final _hotspotsCtrl = StreamController<List<Hotspot>>.broadcast();
 
-  MockDb() : super(null) {
-    _seedData();
+  MockDb([this._prefs]) : super(null) {
+    _initData();
+  }
+
+  void _initData() {
+    final isInitialized = _prefs?.getBool('slamtek_db_initialized') ?? false;
+
+    if (_prefs != null) {
+      final rawUsers = _prefs.getString('slamtek_users_store');
+      final rawPass = _prefs.getString('slamtek_pass_store');
+      final rawContacts = _prefs.getString('slamtek_contacts_store');
+
+      if (rawUsers != null) {
+        try {
+          final list = jsonDecode(rawUsers) as List;
+          _users.clear();
+          for (final item in list) {
+            final u = AppUser.fromMap(Map<String, dynamic>.from(item as Map));
+            _users[u.uid] = u;
+          }
+        } catch (_) {}
+      }
+
+      if (rawPass != null && rawPass.isNotEmpty) {
+        try {
+          final map = jsonDecode(rawPass) as Map;
+          _passwords.clear();
+          map.forEach((k, v) {
+            _passwords[k.toString().trim().toLowerCase()] = v.toString().trim();
+          });
+        } catch (_) {}
+      }
+
+      if (rawContacts != null && rawContacts.isNotEmpty) {
+        try {
+          final list = jsonDecode(rawContacts) as List;
+          _contacts.clear();
+          for (final item in list) {
+            _contacts.add(EmergencyContact.fromMap(Map<String, dynamic>.from(item as Map)));
+          }
+        } catch (_) {}
+      }
+    }
+
+    if (!isInitialized && _users.isEmpty) {
+      _seedData();
+      _prefs?.setBool('slamtek_db_initialized', true);
+    } else {
+      // Ensure admin user always exists if no admin is present
+      if (!_users.containsKey(demoAdmin.uid) && !_users.values.any((u) => u.isAdmin)) {
+        _users[demoAdmin.uid] = demoAdmin;
+        _passwords['admin'] = 'admin';
+        _saveUsers();
+        _savePasswords();
+      }
+      _seedAuxiliary(seedUsers: false);
+    }
+  }
+
+  Future<void> _saveUsers() async {
+    if (_prefs == null) return;
+    final list = _users.values.map((u) => u.toMap()).toList();
+    await _prefs.setString('slamtek_users_store', jsonEncode(list));
+    await _prefs.setBool('slamtek_db_initialized', true);
+  }
+
+  Future<void> _savePasswords() async {
+    if (_prefs == null) return;
+    await _prefs.setString('slamtek_pass_store', jsonEncode(_passwords));
+    await _prefs.setBool('slamtek_db_initialized', true);
+  }
+
+  Future<void> _saveContacts() async {
+    if (_prefs == null) return;
+    final list = _contacts.map((c) => c.toMap()).toList();
+    await _prefs.setString('slamtek_contacts_store', jsonEncode(list));
   }
 
   void _seedData() {
-    _users[demoUser.uid] = demoUser;
     _users[demoAdmin.uid] = demoAdmin;
+    _passwords['admin'] = 'admin';
+
+    _seedAuxiliary(seedUsers: true);
+    _saveUsers();
+    _savePasswords();
+    _saveContacts();
+  }
+
+  void _seedAuxiliary({bool seedUsers = true}) {
+    if (_wilayaNumbers.isEmpty) {
+      for (final w in Wilayas.all) {
+        _wilayaNumbers[w.code] = WilayaNumbers(
+          code: w.code,
+          police: '17',
+          civilProtection: '14',
+          updatedAt: DateTime.now(),
+        );
+      }
+    }
 
     _contacts.addAll([
       const EmergencyContact(
@@ -100,57 +198,60 @@ class MockDb extends Db {
       ),
     );
 
-    final initialBuyers = [
-      ('u2', 'Samir Mansour', 'samir', '0770334455', 31, VehicleType.motorcycle, 2),
-      ('u3', 'Nadia Khelifi', 'nadia', '0661556677', 9, VehicleType.car, 4),
-      ('u4', 'Mohamed Larbi', 'mohamed_l', '0550112233', 25, VehicleType.car, 7),
-      ('u5', 'Amina Zerrouki', 'amina_z', '0662334455', 19, VehicleType.car, 10),
-      ('u6', 'Yacine Mansouri', 'yacine_m', '0771889900', 31, VehicleType.motorcycle, 12),
-      ('u7', 'Dr. Meriem Saidi', 'meriem_s', '0555443322', 25, VehicleType.car, 14),
-      ('u8', 'Sofiane Bouzid', 'sofiane_b', '0663778899', 19, VehicleType.car, 16),
-      ('u9', 'Bilal Haddad', 'bilal_h', '0772112233', 9, VehicleType.motorcycle, 18),
-      ('u10', 'Ryad Belkacem', 'ryad_b', '0551998877', 23, VehicleType.car, 21),
-      ('u11', 'Nabil Guellil', 'nabil_g', '0773445566', 13, VehicleType.car, 24),
-      ('u12', 'Farida Meftah', 'farida_m', '0664887766', 15, VehicleType.car, 28),
-      ('u13', 'Walid Boudiaf', 'walid_b', '0552667788', 5, VehicleType.motorcycle, 32),
-      ('u14', 'Khaled Benaissa', 'khaled_b', '0774332211', 2, VehicleType.car, 35),
-      ('u15', 'Rym Amrani', 'rym_a', '0665112233', 6, VehicleType.car, 38),
-      ('u16', 'Omar Rahmani', 'omar_r', '0553778899', 7, VehicleType.car, 42),
-      ('u17', 'Zahra Messaoudi', 'zahra_m', '0775998877', 30, VehicleType.car, 46),
-      ('u18', 'Hamza Benyoucef', 'hamza_b', '0666443322', 14, VehicleType.motorcycle, 50),
-      ('u19', 'Tariq Slimani', 'tariq_s', '0554112233', 17, VehicleType.car, 55),
-      ('u20', 'Amel Touati', 'amel_t', '0776554433', 16, VehicleType.car, 60),
-    ];
+    if (seedUsers) {
+      final initialBuyers = [
+        ('u2', 'Samir Mansour', 'samir', '0770334455', 31, VehicleType.motorcycle, 2),
+        ('u3', 'Nadia Khelifi', 'nadia', '0661556677', 9, VehicleType.car, 4),
+        ('u4', 'Mohamed Larbi', 'mohamed_l', '0550112233', 25, VehicleType.car, 7),
+        ('u5', 'Amina Zerrouki', 'amina_z', '0662334455', 19, VehicleType.car, 10),
+        ('u6', 'Yacine Mansouri', 'yacine_m', '0771889900', 31, VehicleType.motorcycle, 12),
+        ('u7', 'Dr. Meriem Saidi', 'meriem_s', '0555443322', 25, VehicleType.car, 14),
+        ('u8', 'Sofiane Bouzid', 'sofiane_b', '0663778899', 19, VehicleType.car, 16),
+        ('u9', 'Bilal Haddad', 'bilal_h', '0772112233', 9, VehicleType.motorcycle, 18),
+        ('u10', 'Ryad Belkacem', 'ryad_b', '0551998877', 23, VehicleType.car, 21),
+        ('u11', 'Nabil Guellil', 'nabil_g', '0773445566', 13, VehicleType.car, 24),
+        ('u12', 'Farida Meftah', 'farida_m', '0664887766', 15, VehicleType.car, 28),
+        ('u13', 'Walid Boudiaf', 'walid_b', '0552667788', 5, VehicleType.motorcycle, 32),
+        ('u14', 'Khaled Benaissa', 'khaled_b', '0774332211', 2, VehicleType.car, 35),
+        ('u15', 'Rym Amrani', 'rym_a', '0665112233', 6, VehicleType.car, 38),
+        ('u16', 'Omar Rahmani', 'omar_r', '0553778899', 7, VehicleType.car, 42),
+        ('u17', 'Zahra Messaoudi', 'zahra_m', '0775998877', 30, VehicleType.car, 46),
+        ('u18', 'Hamza Benyoucef', 'hamza_b', '0666443322', 14, VehicleType.motorcycle, 50),
+        ('u19', 'Tariq Slimani', 'tariq_s', '0554112233', 17, VehicleType.car, 55),
+        ('u20', 'Amel Touati', 'amel_t', '0776554433', 16, VehicleType.car, 60),
+      ];
 
-    for (var i = 0; i < initialBuyers.length; i++) {
-      final b = initialBuyers[i];
-      final created = now.subtract(Duration(days: b.$7));
-      final user = AppUser(
-        uid: b.$1,
-        fullName: b.$2,
-        username: b.$3,
-        phone: b.$4,
-        wilayaCode: b.$5,
-        role: 'user',
-        disabled: false,
-        createdAt: created,
-        vehicleType: b.$6,
-        testMode: false,
-        testPhoneNumber: b.$4,
-      );
-      _users[user.uid] = user;
-
-      _devices.add(
-        DeviceInfo(
-          id: 'SOLVEX-${b.$6 == VehicleType.car ? "A" : "M"}${102 + i}',
-          userId: user.uid,
-          name: 'Slamtek IoT Box #${102 + i}',
+      for (var i = 0; i < initialBuyers.length; i++) {
+        final b = initialBuyers[i];
+        final created = now.subtract(Duration(days: b.$7));
+        final user = AppUser(
+          uid: b.$1,
+          fullName: b.$2,
+          username: b.$3,
+          phone: b.$4,
+          wilayaCode: b.$5,
+          role: 'user',
+          disabled: false,
+          createdAt: created,
           vehicleType: b.$6,
-          connected: i % 4 != 0, // 75% online
-          lastSeen: now.subtract(Duration(minutes: (i * 11) % 180)),
-          registeredAt: created,
-        ),
-      );
+          testMode: false,
+          testPhoneNumber: b.$4,
+        );
+        _users[user.uid] = user;
+        _passwords[b.$3] = '123456';
+
+        _devices.add(
+          DeviceInfo(
+            id: 'SOLVEX-${b.$6 == VehicleType.car ? "A" : "M"}${102 + i}',
+            userId: user.uid,
+            name: 'Slamtek IoT Box #${102 + i}',
+            vehicleType: b.$6,
+            connected: i % 4 != 0, // 75% online
+            lastSeen: now.subtract(Duration(minutes: (i * 11) % 180)),
+            registeredAt: created,
+          ),
+        );
+      }
     }
 
     _alerts.addAll([
@@ -264,13 +365,34 @@ class MockDb extends Db {
   AppUser? findUserByUsername(String username) {
     final u = username.trim().toLowerCase();
     for (final user in _users.values) {
-      if (user.username.toLowerCase() == u) return user;
+      if (user.username.trim().toLowerCase() == u) return user;
     }
     return null;
   }
 
-  void addUser(AppUser user) {
+  bool verifyPassword(String username, String password) {
+    final u = username.trim().toLowerCase();
+    final p = password.trim();
+    if (u == 'admin' && (p == 'admin' || p == 'admin123')) {
+      return true;
+    }
+    final stored = _passwords[u];
+    if (stored == null) return false;
+    return stored.trim() == p;
+  }
+
+  Future<void> addUser(AppUser user) async {
     _users[user.uid] = user;
+    await _saveUsers();
+    _usersCtrl.add(_users.values.toList());
+  }
+
+  Future<void> addUserWithPassword(AppUser user, String password) async {
+    final u = user.username.trim().toLowerCase();
+    _users[user.uid] = user;
+    _passwords[u] = password.trim();
+    await _saveUsers();
+    await _savePasswords();
     _usersCtrl.add(_users.values.toList());
   }
 
@@ -297,6 +419,7 @@ class MockDb extends Db {
       testPhoneNumber: '',
     );
     _users[uid] = u;
+    await _saveUsers();
     _usersCtrl.add(_users.values.toList());
   }
 
@@ -321,6 +444,7 @@ class MockDb extends Db {
       avatarUrl: data.containsKey('avatarUrl') ? (data['avatarUrl'] as String?) : existing.avatarUrl,
     );
     _users[uid] = updated;
+    await _saveUsers();
     _usersCtrl.add(_users.values.toList());
   }
 
@@ -333,6 +457,77 @@ class MockDb extends Db {
   @override
   Future<void> setUserDisabled(String uid, bool disabled) async {
     await updateUser(uid, {'disabled': disabled});
+  }
+
+  @override
+  Future<AppUser> createUserByAdmin({
+    required String fullName,
+    required String username,
+    required String password,
+    required String phone,
+    required int wilayaCode,
+    required VehicleType vehicleType,
+    required String role,
+  }) async {
+    final u = username.trim().toLowerCase();
+    if (findUserByUsername(u) != null) {
+      throw Exception('err_username_taken');
+    }
+    final newUser = AppUser(
+      uid: 'user_${DateTime.now().millisecondsSinceEpoch}',
+      fullName: fullName.trim(),
+      username: u,
+      phone: phone.trim(),
+      wilayaCode: wilayaCode,
+      role: role,
+      disabled: false,
+      createdAt: DateTime.now(),
+      vehicleType: vehicleType,
+      testMode: true,
+      testPhoneNumber: phone.trim(),
+    );
+    await addUserWithPassword(newUser, password);
+    return newUser;
+  }
+
+  @override
+  Future<void> deleteUser(String uid) async {
+    final user = _users.remove(uid);
+    if (user != null) {
+      _passwords.remove(user.username.trim().toLowerCase());
+    }
+    _devices.removeWhere((d) => d.userId == uid);
+    _alerts.removeWhere((a) => a.userId == uid);
+    _contacts.removeWhere((c) => c.userId == uid);
+    await _saveUsers();
+    await _savePasswords();
+    await _saveContacts();
+    _usersCtrl.add(_users.values.toList());
+    _devicesCtrl.add(List.from(_devices));
+    _alertsCtrl.add(List.from(_alerts));
+  }
+
+  @override
+  Future<void> clearAllUsers({required String currentAdminUid}) async {
+    final toRemove = _users.values
+        .where((u) => u.uid != currentAdminUid && u.uid != demoAdmin.uid && !u.isAdmin)
+        .map((u) => u.uid)
+        .toList();
+    for (final uid in toRemove) {
+      final user = _users.remove(uid);
+      if (user != null) {
+        _passwords.remove(user.username.trim().toLowerCase());
+      }
+      _devices.removeWhere((d) => d.userId == uid);
+      _alerts.removeWhere((a) => a.userId == uid);
+      _contacts.removeWhere((c) => c.userId == uid);
+    }
+    await _saveUsers();
+    await _savePasswords();
+    await _saveContacts();
+    _usersCtrl.add(_users.values.toList());
+    _devicesCtrl.add(List.from(_devices));
+    _alertsCtrl.add(List.from(_alerts));
   }
 
   // ---------------------------------------------------------------- contacts
@@ -358,6 +553,7 @@ class MockDb extends Db {
         relation: relation,
       ),
     );
+    _saveContacts();
     _contactsCtrl.add(List.from(_contacts));
   }
 
@@ -372,6 +568,7 @@ class MockDb extends Db {
         phone: phone,
         relation: relation,
       );
+      _saveContacts();
       _contactsCtrl.add(List.from(_contacts));
     }
   }
@@ -379,6 +576,7 @@ class MockDb extends Db {
   @override
   Future<void> deleteContact(String id) async {
     _contacts.removeWhere((c) => c.id == id);
+    _saveContacts();
     _contactsCtrl.add(List.from(_contacts));
   }
 

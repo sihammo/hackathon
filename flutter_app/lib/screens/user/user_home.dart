@@ -8,6 +8,7 @@ import '../../models/models.dart';
 import '../../services/auth.dart';
 import '../../services/ble_service.dart';
 import '../../services/db.dart';
+import '../../services/emergency_service.dart';
 import '../common/hotspot_map.dart';
 import 'alarm_screen.dart';
 import 'contacts_screen.dart';
@@ -52,8 +53,13 @@ class _UserHomeState extends State<UserHome> {
     _accSub = _ble.accidents.listen((e) {
       if (mounted) AlarmScreen.show(context, e);
     });
-    // Reconnect to the paired box after the first frame (avoids notifying during build).
-    WidgetsBinding.instance.addPostFrameCallback((_) => _ble.restore());
+    // Reconnect to the paired box and request permissions after the first frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ble.restore();
+      if (mounted) {
+        context.read<EmergencyService>().requestAllCorePermissions();
+      }
+    });
   }
 
   @override

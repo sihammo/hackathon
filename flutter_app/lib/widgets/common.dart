@@ -141,7 +141,7 @@ class WilayaDropdown extends StatelessWidget {
     return DropdownButtonFormField<int>(
       // Rebuild the field when the value changes from outside.
       key: ValueKey('wilaya-$value'),
-      value: value,
+      initialValue: value,
       isExpanded: true,
       decoration: InputDecoration(
         labelText: label ?? context.tr('wilaya'),

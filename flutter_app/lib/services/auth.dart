@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/constants.dart';
 import '../models/models.dart';
@@ -110,6 +111,7 @@ class AuthService {
 class SessionController extends ChangeNotifier {
   final AuthService auth;
   final Db db;
+  final SharedPreferences? _prefs;
 
   AppUser? user;
   bool loading = true;
@@ -121,12 +123,24 @@ class SessionController extends ChangeNotifier {
   StreamSubscription? _authSub;
   StreamSubscription? _userSub;
 
-  SessionController(this.auth, this.db) {
+  SessionController(this.auth, this.db, [this._prefs]) {
     if (auth.isMock) {
-      loading = false;
+      _restoreLocalSession();
     } else {
       _authSub = auth.authChanges().listen(_onAuth);
     }
+  }
+
+  void _restoreLocalSession() {
+    final savedUid = _prefs?.getString('slamtek_session_uid');
+    if (savedUid != null && db is MockDb) {
+      final u = (db as MockDb).findUserById(savedUid);
+      if (u != null && !u.disabled) {
+        user = u;
+      }
+    }
+    loading = false;
+    notifyListeners();
   }
 
   void _onAuth(User? fu) {
@@ -167,20 +181,49 @@ class SessionController extends ChangeNotifier {
     });
   }
 
-  Future<void> signIn(String username, String password) async {
+  Future<void> signIn(String username, String password, {bool? isAdminMode}) async {
     lastError = null;
+    final u = username.trim().toLowerCase();
+    final p = password.trim();
+
+    if (u.isEmpty || p.isEmpty) {
+      throw const AuthFailure('err_required');
+    }
+
     if (auth.isMock) {
-      final u = username.trim().toLowerCase();
-      if (u == 'admin') {
-        user = MockDb.demoAdmin;
-      } else {
-        final mockDb = db is MockDb ? (db as MockDb) : null;
-        user = mockDb?.findUserByUsername(u) ?? MockDb.demoUser;
+      final mockDb = db is MockDb ? (db as MockDb) : null;
+      if (mockDb == null) throw const AuthFailure('err_generic');
+
+      final found = mockDb.findUserByUsername(u);
+      if (found == null) {
+        throw const AuthFailure('err_bad_credentials');
       }
+
+      if (!mockDb.verifyPassword(u, p)) {
+        throw const AuthFailure('err_bad_credentials');
+      }
+
+      if (found.disabled) {
+        throw const AuthFailure('err_disabled');
+      }
+
+      // Check role separation only if explicit mode was specified
+      if (isAdminMode != null) {
+        if (isAdminMode && !found.isAdmin) {
+          throw const AuthFailure('err_not_admin');
+        }
+        if (!isAdminMode && found.isAdmin) {
+          throw const AuthFailure('err_is_admin');
+        }
+      }
+
+      user = found;
+      await _prefs?.setString('slamtek_session_uid', found.uid);
       loading = false;
       notifyListeners();
       return;
     }
+
     return auth.signIn(username, password);
   }
 
@@ -233,8 +276,17 @@ class SessionController extends ChangeNotifier {
     required int wilayaCode,
   }) async {
     lastError = null;
+    final u = username.trim().toLowerCase();
+    final p = password.trim();
+
     if (auth.isMock) {
-      final u = username.trim().toLowerCase();
+      final mockDb = db is MockDb ? (db as MockDb) : null;
+      if (mockDb != null) {
+        if (mockDb.findUserByUsername(u) != null) {
+          throw const AuthFailure('err_username_taken');
+        }
+      }
+
       final newUser = AppUser(
         uid: 'user_${DateTime.now().millisecondsSinceEpoch}',
         fullName: fullName.trim(),
@@ -246,16 +298,20 @@ class SessionController extends ChangeNotifier {
         createdAt: DateTime.now(),
         vehicleType: VehicleType.car,
         testMode: true,
-        testPhoneNumber: '0555999888',
+        testPhoneNumber: phone.trim(),
       );
-      if (db is MockDb) {
-        (db as MockDb).addUser(newUser);
+
+      if (mockDb != null) {
+        await mockDb.addUserWithPassword(newUser, p);
       }
+
       user = newUser;
+      await _prefs?.setString('slamtek_session_uid', newUser.uid);
       loading = false;
       notifyListeners();
       return;
     }
+
     _signingUp = true;
     try {
       await auth.signUp(
@@ -271,6 +327,7 @@ class SessionController extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    await _prefs?.remove('slamtek_session_uid');
     if (auth.isMock) {
       user = null;
       notifyListeners();

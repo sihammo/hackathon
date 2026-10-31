@@ -75,5 +75,13 @@ ThemeData buildTheme() {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(minimumSize: const Size(64, 48)),
     ),
+    navigationBarTheme: NavigationBarThemeData(
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return const TextStyle(fontSize: 11, fontWeight: FontWeight.bold);
+        }
+        return const TextStyle(fontSize: 11, fontWeight: FontWeight.w500);
+      }),
+    ),
   );
 }

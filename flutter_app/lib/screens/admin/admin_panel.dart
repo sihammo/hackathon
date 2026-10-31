@@ -61,15 +61,42 @@ class _AdminPanelState extends State<AdminPanel> {
         ],
       ),
       body: IndexedStack(index: _tab, children: pages),
+      floatingActionButton: _tab == 3
+          ? FloatingActionButton.extended(
+              icon: const Icon(Icons.person_add),
+              label: Text(context.tr('add_user')),
+              onPressed: () => UsersTab.showCreateUserDialog(context),
+            )
+          : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
         onDestinationSelected: (i) => setState(() => _tab = i),
         destinations: [
-          NavigationDestination(icon: const Icon(Icons.dashboard_outlined), selectedIcon: const Icon(Icons.dashboard), label: context.tr('admin_dashboard')),
-          NavigationDestination(icon: const Icon(Icons.notifications_active_outlined), selectedIcon: const Icon(Icons.notifications_active), label: context.tr('admin_alerts')),
-          NavigationDestination(icon: const Icon(Icons.map_outlined), selectedIcon: const Icon(Icons.map), label: context.tr('admin_map')),
-          NavigationDestination(icon: const Icon(Icons.people_outline), selectedIcon: const Icon(Icons.people), label: context.tr('admin_users')),
-          NavigationDestination(icon: const Icon(Icons.local_phone_outlined), selectedIcon: const Icon(Icons.local_phone), label: context.tr('admin_wilayas')),
+          NavigationDestination(
+            icon: const Icon(Icons.dashboard_outlined),
+            selectedIcon: const Icon(Icons.dashboard),
+            label: context.tr('nav_dashboard_short'),
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.notifications_active_outlined),
+            selectedIcon: const Icon(Icons.notifications_active),
+            label: context.tr('admin_alerts'),
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.map_outlined),
+            selectedIcon: const Icon(Icons.map),
+            label: context.tr('admin_map'),
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.people_outline),
+            selectedIcon: const Icon(Icons.people),
+            label: context.tr('nav_users_short'),
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.local_phone_outlined),
+            selectedIcon: const Icon(Icons.local_phone),
+            label: context.tr('admin_wilayas'),
+          ),
         ],
       ),
     );

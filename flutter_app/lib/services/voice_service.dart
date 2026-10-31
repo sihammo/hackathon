@@ -1,18 +1,12 @@
-import 'dart:js_interop' as js_util;
 import 'package:flutter/foundation.dart';
-
-@js_util.JS('speakWarning')
-external void _jsSpeakWarning(js_util.JSString text, js_util.JSString lang);
+import 'voice_service_stub.dart'
+    if (dart.library.js_interop) 'voice_service_web.dart';
 
 /// Voice service for speaking proximity warnings and emergency notices.
 class VoiceService {
   static void speak(String text, {String lang = 'fr-FR'}) {
     if (kIsWeb) {
-      try {
-        _jsSpeakWarning(text.toJS, lang.toJS);
-      } catch (e) {
-        debugPrint('Voice synthesis error: $e');
-      }
+      speakWeb(text, lang);
     }
   }
 

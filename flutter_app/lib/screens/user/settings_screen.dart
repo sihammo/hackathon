@@ -259,9 +259,30 @@ class _TestNumberFieldState extends State<_TestNumberField> {
       TextEditingController(text: widget.user.testPhoneNumber);
 
   @override
+  void didUpdateWidget(covariant _TestNumberField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.user.testPhoneNumber != widget.user.testPhoneNumber) {
+      if (_c.text != widget.user.testPhoneNumber) {
+        _c.text = widget.user.testPhoneNumber;
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _c.dispose();
     super.dispose();
+  }
+
+  Future<void> _save() async {
+    final v = _c.text.trim();
+    if (v.isNotEmpty && !isValidPhone(v)) {
+      showSnack(context, context.tr('err_phone'));
+      return;
+    }
+    await context.read<SessionController>().updateUser({'testPhoneNumber': v});
+    if (!mounted) return;
+    showSnack(context, context.tr('saved'));
   }
 
   @override
@@ -272,6 +293,7 @@ class _TestNumberFieldState extends State<_TestNumberField> {
           child: TextField(
             controller: _c,
             keyboardType: TextInputType.phone,
+            onSubmitted: (_) => _save(),
             decoration: InputDecoration(
               labelText: context.tr('test_number'),
               helperText: widget.fallback.isNotEmpty
@@ -284,15 +306,7 @@ class _TestNumberFieldState extends State<_TestNumberField> {
         const SizedBox(width: 8),
         IconButton.filledTonal(
           icon: const Icon(Icons.save),
-          onPressed: () async {
-            final v = _c.text.trim();
-            if (v.isNotEmpty && !isValidPhone(v)) {
-              showSnack(context, context.tr('err_phone'));
-              return;
-            }
-            await context.read<Db>().updateUser(widget.user.uid, {'testPhoneNumber': v});
-            if (context.mounted) showSnack(context, context.tr('saved'));
-          },
+          onPressed: _save,
         ),
       ],
     );

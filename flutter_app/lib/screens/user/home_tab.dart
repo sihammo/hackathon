@@ -29,7 +29,8 @@ class HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<HomeTab> {
-  bool? _permsOk;
+  bool _locOk = true;
+  bool _notifOk = true;
   Wilaya? _detected;
   bool _detectDismissed = false;
   late final MapController _dashboardMapController = MapController();
@@ -90,11 +91,20 @@ class _HomeTabState extends State<HomeTab> {
     _checkPerms();
     _detectWilaya();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _checkPerms();
+      if (!mounted) return;
+      if (!_locOk || !_notifOk) {
+        await _requestPerms();
+      }
+      if (!mounted) return;
       try {
-        final loc = context.read<LocationService>().userLocation;
-        final userLoc = LatLng(loc.lat, loc.lng);
-        _fetchLiveRoadRoute(userLoc, _selectedDestination.targetLocation);
+        final loc = await context.read<LocationService>().current();
+        if (loc != null && mounted) {
+          final userLoc = LatLng(loc.lat, loc.lng);
+          _fetchLiveRoadRoute(userLoc, _selectedDestination.targetLocation);
+        }
       } catch (_) {}
+      if (!mounted) return;
       try {
         final hotspots = await context.read<Db>().allHotspots().first;
         if (mounted) {
@@ -107,18 +117,60 @@ class _HomeTabState extends State<HomeTab> {
 
   /// Auto-detects the wilaya from GPS and suggests it if it differs.
   Future<void> _detectWilaya() async {
+    if (!mounted) return;
     final w = await context.read<LocationService>().detectWilaya();
     if (mounted && w != null) setState(() => _detected = w);
   }
 
   Future<void> _checkPerms() async {
-    final ok = await context.read<EmergencyService>().hasAllPermissions();
-    if (mounted) setState(() => _permsOk = ok);
+    if (!mounted) return;
+    final em = context.read<EmergencyService>();
+    final loc = await em.isLocationGranted();
+    final notif = await em.isNotificationGranted();
+    if (mounted) {
+      setState(() {
+        _locOk = loc;
+        _notifOk = notif;
+      });
+    }
+  }
+
+  Future<void> _requestLocation() async {
+    if (!mounted) return;
+    await context.read<EmergencyService>().requestLocationPermission();
+    await _checkPerms();
+    if (_locOk && mounted) {
+      _detectWilaya();
+      try {
+        final loc = await context.read<LocationService>().current();
+        if (loc != null && mounted) {
+          final userLoc = LatLng(loc.lat, loc.lng);
+          _fetchLiveRoadRoute(userLoc, _selectedDestination.targetLocation);
+        }
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _requestNotification() async {
+    if (!mounted) return;
+    await context.read<EmergencyService>().requestNotificationPermission();
+    await _checkPerms();
   }
 
   Future<void> _requestPerms() async {
-    await context.read<EmergencyService>().requestPermissions();
+    if (!mounted) return;
+    await context.read<EmergencyService>().requestAllCorePermissions();
     await _checkPerms();
+    if (_locOk && mounted) {
+      _detectWilaya();
+      try {
+        final loc = await context.read<LocationService>().current();
+        if (loc != null && mounted) {
+          final userLoc = LatLng(loc.lat, loc.lng);
+          _fetchLiveRoadRoute(userLoc, _selectedDestination.targetLocation);
+        }
+      } catch (_) {}
+    }
   }
 
   Future<void> _setVehicle(AppUser user, VehicleType v) async {
@@ -265,22 +317,141 @@ class _HomeTabState extends State<HomeTab> {
                 ),
                 const SizedBox(height: 12),
               ],
-              if (_permsOk == false) ...[
+              if (!_locOk || !_notifOk) ...[
                 SectionCard(
                   title: context.tr('permissions_needed'),
-                  icon: Icons.privacy_tip_outlined,
+                  icon: Icons.shield_outlined,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(context.tr('permissions_desc')),
-                      const SizedBox(height: 12),
-                      FilledButton.tonal(
+                      Text(
+                        context.tr('permissions_desc'),
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 16),
+                      // Location item
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _locOk
+                              ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.25)
+                              : Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: _locOk
+                                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+                                : Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _locOk ? Icons.check_circle : Icons.location_on_outlined,
+                              color: _locOk
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.error,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    context.tr('permission_location'),
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    context.tr('permission_location_desc'),
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (!_locOk)
+                              FilledButton.tonal(
+                                onPressed: _requestLocation,
+                                child: Text(context.tr('grant_permissions')),
+                              )
+                            else
+                              Chip(
+                                avatar: const Icon(Icons.check, size: 16),
+                                label: Text(context.tr('permission_granted')),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      // Notification item
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _notifOk
+                              ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.25)
+                              : Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: _notifOk
+                                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+                                : Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _notifOk ? Icons.check_circle : Icons.notifications_active_outlined,
+                              color: _notifOk
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.error,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    context.tr('permission_notification'),
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    context.tr('permission_notification_desc'),
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (!_notifOk)
+                              FilledButton.tonal(
+                                onPressed: _requestNotification,
+                                child: Text(context.tr('grant_permissions')),
+                              )
+                            else
+                              Chip(
+                                avatar: const Icon(Icons.check, size: 16),
+                                label: Text(context.tr('permission_granted')),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      FilledButton.icon(
+                        icon: const Icon(Icons.verified_user_outlined),
+                        label: Text(context.tr('grant_all_permissions')),
                         onPressed: _requestPerms,
-                        child: Text(context.tr('grant_permissions')),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(height: 12),
               ],
               if (_detected != null && _detected!.code != user.wilayaCode && !_detectDismissed)
                 SectionCard(
@@ -319,37 +490,240 @@ class _HomeTabState extends State<HomeTab> {
               _dashboardMapCard(context, locService, db, isArabic),
               _wilayaCard(context, user, db, testMode, cfg),
               if (testMode)
-                SectionCard(
-                  title: context.tr('test_tools'),
-                  icon: Icons.science_outlined,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      FilledButton.icon(
-                        style: FilledButton.styleFrom(backgroundColor: AppColors.brand),
-                        onPressed: () => ble.simulateAccident(),
-                        icon: const Icon(Icons.car_crash),
-                        label: Text(context.tr('simulate_accident')),
-                      ),
-                      const SizedBox(height: 8),
-                      OutlinedButton.icon(
-                        onPressed: ble.isConnected
-                            ? () async {
-                                final ok = await ble.sendTestAlert();
-                                if (context.mounted && !ok) {
-                                  showSnack(context, context.tr('device_not_connected'));
-                                }
-                              }
-                            : null,
-                        icon: const Icon(Icons.bluetooth),
-                        label: Text(context.tr('device_test_alert')),
-                      ),
-                    ],
-                  ),
-                ),
+                _testToolsCard(context, user, ble, db, cfg, isArabic),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _testToolsCard(
+    BuildContext context,
+    AppUser user,
+    BleService ble,
+    Db db,
+    AppConfig cfg,
+    bool isArabic,
+  ) {
+    return StreamBuilder<List<EmergencyContact>>(
+      stream: db.contactsOf(user.uid),
+      builder: (context, snap) {
+        final contacts = snap.data ?? const <EmergencyContact>[];
+        final targetNumber = EmergencyService.resolveCallTarget(user, contacts, cfg);
+
+        String sourceLabel;
+        final cleanTest = EmergencyService.cleanPhoneNumber(user.testPhoneNumber);
+        final cleanPhone = EmergencyService.cleanPhoneNumber(user.phone);
+
+        if (cleanTest.isNotEmpty && cleanTest != cleanPhone) {
+          sourceLabel = context.tr('source_custom');
+        } else if (contacts.isNotEmpty) {
+          sourceLabel = context.tr('source_contact').replaceAll('{name}', contacts.first.name);
+        } else if (cleanTest.isNotEmpty) {
+          sourceLabel = context.tr('source_custom');
+        } else {
+          sourceLabel = context.tr('source_default');
+        }
+
+        return SectionCard(
+          title: context.tr('test_tools'),
+          icon: Icons.science_outlined,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.brand.withValues(alpha: 0.07),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.brand.withValues(alpha: 0.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: AppColors.brand.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.phone_in_talk, color: AppColors.brand, size: 20),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                context.tr('target_call_number'),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[700],
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                targetNumber,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              Text(
+                                sourceLabel,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.brand.withValues(alpha: 0.9),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton.filledTonal(
+                          tooltip: context.tr('change_target_number'),
+                          icon: const Icon(Icons.edit, size: 18),
+                          onPressed: () => _showEditTargetDialog(context, user, targetNumber),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      context.tr('target_call_number_desc'),
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Direct Real Phone Call button
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF0D9488),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () async {
+                  final em = context.read<EmergencyService>();
+                  showSnack(
+                    context,
+                    context.tr('direct_call_calling').replaceAll('{n}', targetNumber),
+                  );
+                  final ok = await em.call(targetNumber);
+                  if (!ok && context.mounted) {
+                    showSnack(context, isArabic ? 'تعذر إطلاق المكالمة' : "Échec du lancement de l'appel");
+                  }
+                },
+                icon: const Icon(Icons.phone_forwarded),
+                label: Text(
+                  context.tr('direct_call_test'),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Full crash simulation (15s siren countdown + SMS + real call)
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.brand,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () => ble.simulateAccident(),
+                icon: const Icon(Icons.car_crash),
+                label: Text(
+                  context.tr('simulate_accident'),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: ble.isConnected
+                    ? () async {
+                        final ok = await ble.sendTestAlert();
+                        if (context.mounted && !ok) {
+                          showSnack(context, context.tr('device_not_connected'));
+                        }
+                      }
+                    : null,
+                icon: const Icon(Icons.bluetooth),
+                label: Text(context.tr('device_test_alert')),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showEditTargetDialog(
+    BuildContext context,
+    AppUser user,
+    String currentNumber,
+  ) async {
+    final controller = TextEditingController(text: currentNumber);
+    final formKey = GlobalKey<FormState>();
+
+    await showDialog(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: Text(d.tr('choose_target_dialog_title')),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                d.tr('target_call_number_desc'),
+                style: const TextStyle(fontSize: 13, color: Colors.black54),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: controller,
+                keyboardType: TextInputType.phone,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: d.tr('phone'),
+                  prefixIcon: const Icon(Icons.phone),
+                  hintText: '0555 12 34 56',
+                ),
+                validator: (v) {
+                  final clean = EmergencyService.cleanPhoneNumber(v ?? '');
+                  if (clean.length < 8) return d.tr('err_phone');
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(d).pop(),
+            child: Text(d.tr('cancel')),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (formKey.currentState?.validate() ?? false) {
+                final clean = EmergencyService.cleanPhoneNumber(controller.text);
+                await context.read<SessionController>().updateUser({'testPhoneNumber': clean});
+                if (d.mounted) Navigator.of(d).pop();
+                if (context.mounted) {
+                  showSnack(context, context.tr('saved'));
+                }
+              }
+            },
+            child: Text(d.tr('save')),
+          ),
+        ],
       ),
     );
   }
