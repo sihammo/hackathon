@@ -64,12 +64,18 @@ class _SignupScreenState extends State<SignupScreen> {
         (v == null || v.trim().isEmpty) ? context.tr('err_required') : null;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         title: Text(context.tr('create_account')),
         actions: const [LanguageButton()],
       ),
       body: SafeArea(
-        child: Center(
+        child: Container(
+          color: Colors.white,
+          child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: ConstrainedBox(
@@ -171,6 +177,7 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
